@@ -38,6 +38,7 @@ def index():
             session['fields'] = fields
             return redirect(url_for('training'))
         else:
+            # probably need to make sure to handle the error in the template
             error = 'Error uploading file'
             status_code = 500
     else:
@@ -51,14 +52,26 @@ def index():
     }
     return make_response(render_app_template('index.html', **context), status_code)
 
-@app.route('/training/')
+@app.route('/training/', methods=['GET', 'POST'])
 def training():
     if not session.get('filename'):
         return redirect(url_for('index'))
     else:
         filename = session.get('filename')
         fields = session.get('fields')
-        return render_app_template('training.html', filename=filename, fields=fields)
+        error = None
+        if request.method == 'POST':
+            f = request.files.get('training_file')
+            if f and allowed_file(f.filename):
+                training_filename = secure_filename(str(time.time()) + '_' + f.filename)
+            else:
+                error = 'Need a training file for now'
+        context = {
+            'filename': filename, 
+            'fields': fields,
+            'error': error,
+        }
+        return render_app_template('training.html', **context)
 
 # UTILITY
 def render_app_template(template, **kwargs):

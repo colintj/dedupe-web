@@ -13,9 +13,11 @@ class WebDeduper(object):
     
     def dedupe(self):
         data_d = self.readData()
-        data_sample = dedupe.dataSample(data_d, 150000)
         deduper = dedupe.Dedupe(self.fields)
-        deduper.train(data_sample, self.labeler)
+        deduper.sample(data_d, 150000)
+        if self.training_file:
+            deduper.readTraining(self.training_file)
+        deduper.train()
         deduper.writeTraining(self.outp)
         return self.outp.getvalue()
     
