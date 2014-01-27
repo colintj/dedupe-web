@@ -1,80 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="">
-    <meta name="author" content="">
-
-    <title>Spreadsheet Deduper</title>
-
-    <!-- Bootstrap core CSS -->
-    <link href="static/css/bootstrap.min.css" rel="stylesheet">
-    <link href="static/css/font-awesome.css" rel="stylesheet">
-
-    <!-- Custom styles for this template -->
-    <link href="static/css/custom.css" rel="stylesheet">
-
-    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
-    <!--[if lt IE 9]>
-      <script src="static/js/html5shiv.js"></script>
-      <script src="static/js/respond.min.js"></script>
-    <![endif]-->
-  </head>
-
-  <body>
-
-    <div class="container">
-      <div class='col-md-10 col-md-offset-1'>
-
-        <div class="jumbotron">
-          <h2>Spreadsheet Deduper</h2>
-          <h1>
-            <i class='icon-copy'></i>
-            <i class='icon-long-arrow-right'></i>
-            <i class='icon-file-alt'></i>
-          </h1>
-        </div>
-
-        <div class='col-md-8'>
-          <h2>Let's get started</h2>
-          <form role="form" action="/dedupe/" method="post" enctype="multipart/form-data">
-            <div class="form-group">
-              <label for="input_file">CSV file</label>
-              <input type="file" id="input_file" name="input_file">
-              <p class="help-block">A spreadsheet on your computer with duplicates.</p>
-            </div>
-            <div class="form-group">
-              <label for="fields">Fields</label>
-              <input type="text" class="form-control" id="fields" name="fields" placeholder="name, address, city, etc...">
-              <p class="help-block">Columns in your spreadsheet you want us to pay attention to.</p>
-            </div>
-            
-            <div class="checkbox">
-              <label>
-                <input type="checkbox" name="remove_duplicates"> Remove duplicates from output
-              </label>
-            </div>
-            <button type="submit" class="btn btn-default">Next &raquo;</button>
-          </form>
-        </div>
-
-        <div class='clearfix'></div>
-
-        <br />
-
-        <div class="footer">
-          <p>&copy; <a href='http://datamade.us'>DataMade</a></p>
-        </div>
-      </div>
-    </div> <!-- /container -->
-
-
-    <!-- Bootstrap core JavaScript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    <script src="https://code.jquery.com/jquery-1.10.1.min.js"></script>
-    <script src="static/js/bootstrap.min.js"></script>
-    <script src="static/js/analytics_lib.js"></script>
-  </body>
-</html>
+{% extends 'base.html' %}
+{% block content %}
+<h2>Let's get started</h2>
+<form role="form" action="/" method="post" enctype="multipart/form-data">
+    <div class="form-group">
+        <label for="input_file">CSV file</label>
+        <input type="file" id="input_file" name="input_file">
+        <p class="help-block">A spreadsheet on your computer with duplicates.</p>
+    </div>
+    <button type="submit" class="btn btn-default">Next &raquo;</button>
+</form>
+{% endblock %}

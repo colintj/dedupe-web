@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Training</h2>
+<h4>File saved: {{ filename.human }}</h4>
+    <form>
+    <div class="form-group">
+        <p class="help-block">Check the columns in your spreadsheet you want us to pay attention to: </p>
+        {% for field in fields %}
+            <label>
+                <input type="checkbox" name="{{field}}"> {{field}}
+            </label>
+            <br />
+        {% endfor %}
+    </div>
+    <div class="checkbox">
+        <label>
+            <input type="checkbox" name="remove_duplicates"> Remove duplicates from output
+        </label>
+    </div>
+    </form>
+{% endblock %}
