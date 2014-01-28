@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
     <h2>Training</h2>
-    <h4>File saved: {{ filename.human }}</h4>
+    <h4>File saved: {{ filename }}</h4>
     {% if error %}
         <div class="alert alert-warning alert-dismissable">
             <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
@@ -10,6 +10,7 @@
     {% endif %}
     <form role="form" action="{{ url_for('training')}}" method="post" enctype="multipart/form-data">
         <div class="row">
+            {% if fields %}
             <div class="col-md-6">
                 <div class="form-group">
                     <p class="help-block">Check the columns in your spreadsheet you want us to pay attention to... </p>
@@ -22,6 +23,9 @@
                   </div>
             </div>
             <div class="col-md-6">
+            {% else %}
+            <div class="col-md-12">
+            {% endif %}
                 <div class="form-group">
                     <p class="help-block">...or upload a predefined training file</p>
                     <label for="training_file">Training file</label>

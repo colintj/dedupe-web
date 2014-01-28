@@ -1,5 +1,5 @@
 from flask import Flask, request, make_response, render_template, \
-    session as flask_session, redirect, url_for, send_from_directory
+    session as flask_session, redirect, url_for, send_from_directory, jsonify
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from werkzeug import secure_filename
@@ -11,8 +11,12 @@ import re
 import os
 from cStringIO import StringIO
 import csv
-from deduper import WebDeduper
-from models import DedupeSession, Training
+from deduper import dedupeit
+from models import DedupeSession
+from queue import DelayedResult
+from redis import Redis
+
+redis = Redis()
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'upload_data')
 ALLOWED_EXTENSIONS = set(['csv', 'json'])
@@ -20,6 +24,7 @@ ALLOWED_EXTENSIONS = set(['csv', 'json'])
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+app.config['REDIS_QUEUE_KEY'] = 'deduper'
 app.secret_key = os.environ['FLASK_KEY']
 engine = create_engine('sqlite:///deduper.db')
 Session = sessionmaker(bind=engine)
@@ -76,30 +81,20 @@ def training():
                 training_path = os.path.join(
                     app.config['UPLOAD_FOLDER'], training_filename)
                 f.save(training_path)
-                now = datetime.now()
-                f.seek(0)
-                pair_data = json.load(f)
-                all_pairs = []
-                for distinct in pair_data['distinct']:
-                    pair = Training(
-                        session_id=s.id,
-                        pair_left=distinct[0],
-                        pair_right=distinct[1],
-                        match=False,
-                        timestamp=now
-                    )
-                    all_pairs.append(pair)
-                for match in pair_data['match']:
-                    pair = Training(
-                        session_id=s.id,
-                        pair_left=match[0],
-                        pair_right=match[1],
-                        match=True,
-                        timestamp=now
-                    )
-                    all_pairs.append(pair)
-                sql_session.add_all(all_pairs)
+                s.training_file_path = training_path
+                # TODO Get the fields from user input if no training file
+                # is uploaded in the else clause below
+                fields = {
+                    'Site name': {'type': 'String'},
+                    'Address': {'type': 'String'},
+                    'Zip': {'type': 'String', 'Has Missing' : True},
+                    'Phone': {'type': 'String', 'Has Missing' : True},
+                }
+                s.field_definitions = json.dumps(fields)
+                sql_session.add(s)
                 sql_session.commit()
+                rv = dedupeit.delay(s.id)
+                flask_session['deduper_key'] = rv.key
                 return redirect(url_for('working'))
             else:
                 error = 'Need a training file for now'
@@ -112,10 +107,15 @@ def training():
 
 @app.route('/working/')
 def working():
-    session_id = flask_session.get('session_id')
-    s = sql_session.query(DedupeSession).get(flask_session['session_id'])
-    return make_response('uh')
-
+    key = flask_session.get('deduper_key')
+    if key is None:
+        return jsonify(ready=False)
+    rv = DelayedResult(key)
+    if rv.return_value is None:
+        return jsonify(ready=False)
+    redis.delete(key)
+    del flask_session['deduper_key']
+    return jsonify(ready=True, result=rv.return_value)
 
 # UTILITY
 def render_app_template(template, **kwargs):
