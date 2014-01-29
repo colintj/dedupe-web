@@ -11,26 +11,26 @@ from queue import queuefunc
 from numpy import nan
 from datetime import datetime
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class WebDeduper(object):
     
-    def __init__(self, file_path=None, field_defs=None, training_data=None):
+    def __init__(self, file_path=None, field_defs=None, training_data=None, data_sample=None):
         self.file_path = file_path
-        self.deduper = dedupe.Dedupe(field_defs)
         self.data_d = self.readData()
+        self.deduper = dedupe.Dedupe(field_defs, data_sample=data_sample)
         self.deduper.readTraining(training_data)
         self.deduper.train()
-        settings_path = '%s-settings' % file_path
-        self.deduper.writeTraining(training_data)
-        self.deduper.writeSettings(settings_path)
+        self.settings_path = '%s-settings' % file_path
+        self.training_data = training_data
+        self.deduper.writeTraining(self.training_data)
+        self.deduper.writeSettings(self.settings_path)
 
     def dedupe(self):
         threshold = self.deduper.threshold(self.data_d, recall_weight=2)
         clustered_dupes = self.deduper.match(self.data_d, threshold)
-        deduped_file_name = '%s-deduped.csv' % self.file_path
-        deduped_file_path = os.path.join(os.path.dirname(self.path), deduped_file_name)
+        deduped_file_path = '%s-deduped.csv' % self.file_path
         outp = open(deduped_file_path, 'wb')
         membership = defaultdict(lambda: 'x')
         for (cluster_id, cluster) in enumerate(clustered_dupes):
@@ -47,7 +47,12 @@ class WebDeduper(object):
                 cluster_id = membership[row_id]
                 row.insert(0, cluster_id)
                 writer.writerow(row)
-        return deduped_file_path
+        files = {
+            'original': self.file_path,
+            'training': self.training_data,
+            'settings': self.settings_path,
+        }
+        return json.dumps(files)
     
     def preProcess(self, column):
         column = AsciiDammit.asciiDammit(column)

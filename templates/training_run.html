@@ -9,7 +9,7 @@
     {% endif %}
 
     <table id='labeler' class='table table-bordered'></table>
-    
+
     <div class='clearfix'></div>
     <h4>Are these the same?</h4>
     <p class='pull-left'>
@@ -41,7 +41,6 @@
             <td>{{right}}</td>\
           </tr>\
         ";
-
         $('.btn').on('click', function(e){
             e.preventDefault();
             $('#labeler').spin('large');
@@ -59,7 +58,7 @@
 
         render_training_pair();
     });
-    
+
     function render_training_pair(){
         console.log('rendering training pair');
         $.when(get_training_pair()).then(
@@ -68,7 +67,7 @@
 
                 var label_data = [];
                 $.each(data, function(i, json){
-                    
+
                     // [
                     //     {"field": "city", "left": "new york", "right": "chicago"}
                     // ]
@@ -111,7 +110,7 @@
     }
     function poll_worker(){
         $.ajax({
-            url: '/worker/',
+            url: '/working/',
             success: function(data){
                 if (data.ready){
                     display_links(data);

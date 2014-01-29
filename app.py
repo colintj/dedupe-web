@@ -137,18 +137,15 @@ def get_pair():
         fields = deduper.data_model.comparison_fields
         record_pair = deduper.getUncertainPair()[0]
         dedupers[deduper_id]['current_pair'] = record_pair
-        data = {
-            'fields': fields,
-            'left': {},
-            'right': {},
-        }
+        data = []
         left, right = record_pair
-        for k,v in left.items():
-            if k in fields:
-                data['left'][k] = v
-        for k,v in right.items():
-            if k in fields:
-                data['right'][k] = v
+        for field in fields:
+            d = {
+                'field': field,
+                'left': left[field],
+                'right' right[field],
+            }
+            data.append(d)
         resp = make_response(json.dumps(data))
         resp.headers['Content-Type'] = 'application/json'
         return resp
@@ -188,10 +185,12 @@ def mark_pair():
             with open(training_file_path, 'wb') as f:
                 f.write(json.dumps(training_data, default=_to_json))
             field_defs = dedupers[deduper_id]['field_defs']
+            sample = dedupers[deduper_id]['deduper'].data_sample
             args = {
                 'field_defs': field_defs,
                 'training_data': training_file_path,
                 'file_path': file_path,
+                'data_sample': sample,
             }
             rv = dedupeit.delay(**args)
             flask_session['deduper_key'] = rv.key
