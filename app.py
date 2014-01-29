@@ -158,6 +158,10 @@ def mark_pair():
         action = request.args['action']
         deduper_id = flask_session['session_id']
         current_pair = dedupers[deduper_id]['current_pair']
+        if dedupers[deduper_id].get('counter'):
+            counter = dedupers[deduper_id]['counter']
+        else:
+            counter = {'yes': 0, 'no': 0, 'unsure': 0}
         if dedupers[deduper_id].get('training_data'):
             labels = dedupers[deduper_id]['training_data']
         else:
@@ -165,16 +169,12 @@ def mark_pair():
         deduper = dedupers[deduper_id]['deduper']
         if action == 'yes':
             labels['match'].append(current_pair)
-            deduper.markPairs(labels)
-            dedupers[deduper_id]['training_data'] = labels
-            resp = make_response(json.dumps({'marked': True}))
-            resp.headers['Content-Type'] = 'application/json'
+            counter['yes'] += 1
+            resp = {'counter': counter}
         elif action == 'no':
             labels['distinct'].append(current_pair)
-            deduper.markPairs(labels)
-            dedupers[deduper_id]['training_data'] = labels
-            resp = make_response(json.dumps({'marked': True}))
-            resp.headers['Content-Type'] = 'application/json'
+            counter['no'] += 1
+            resp = {'counter': counter}
         elif action == 'finish':
             filename = dedupers[deduper_id]['filename']
             file_path = os.path.join(UPLOAD_FOLDER, filename)
@@ -194,49 +194,24 @@ def mark_pair():
             }
             rv = dedupeit.delay(**args)
             flask_session['deduper_key'] = rv.key
-            resp = make_response(json.dumps({'finished': True}))
-            resp.headers['Content-Type'] = 'application/json'
+            resp = {'finished': True}
         else:
-            resp = make_response(json.dumps({'marked': True}))
-            resp.headers['Content-Type'] = 'application/json'
+            counter['unsure'] += 1
+            dedupers[deduper_id]['counter'] = counter
+            resp = {'counter': counter}
+        resp['weights'] = {}
+        for (k1, v1) in deduper.data_model.items():
+            try:
+                for (k2, v2) in v1.items():
+                    resp['weights'][k2] = v2['weight']
+            except AttributeError:
+                resp['weights'][k1] = v1
+        deduper.markPairs(labels)
+        dedupers[deduper_id]['training_data'] = labels
+        dedupers[deduper_id]['counter'] = counter
+    resp = make_response(json.dumps(resp))
+    resp.headers['Content-Type'] = 'application/json'
     return resp
-
-@app.route('/dedupe-start/', methods=['POST'])
-def dedupe_start():
-    if not flask_session.get('session_id'):
-        return redirect(url_for('index'))
-    else:
-        s = sql_session.query(DedupeSession).get(flask_session['session_id'])
-        f = request.files.get('training_file')
-        if f and allowed_file(f.filename):
-            error = None
-            training_filename = secure_filename('%s_%s' % (str(time.time()), f.filename))
-            training_path = os.path.join(
-                app.config['UPLOAD_FOLDER'], training_filename)
-            f.save(training_path)
-            s.training_file_path = training_path
-            # TODO Get the fields from user input if no training file
-            # is uploaded in the else clause below
-            fields = {
-                'Site name': {'type': 'String'},
-                'Address': {'type': 'String'},
-                'Zip': {'type': 'String', 'Has Missing' : True},
-                'Phone': {'type': 'String', 'Has Missing' : True},
-            }
-            s.field_definitions = json.dumps(fields)
-            sql_session.add(s)
-            sql_session.commit()
-            rv = dedupeit.delay(s.id)
-            flask_session['deduper_key'] = rv.key
-        else:
-            error = 'Need a training file for now'
-        context = {
-            'filename': s.human_filename, 
-            'fields': fields,
-            'error': error,
-            'working': True,
-        }
-        return render_app_template('training.html', **context)
 
 @app.route('/working/')
 def working():

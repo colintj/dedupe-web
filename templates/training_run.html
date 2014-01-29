@@ -88,6 +88,7 @@
         })
     }
     function display_links(data){
+        $('#labeler').spin(false);
         console.log(data);
     }
 
@@ -98,7 +99,7 @@
         $.when(mark_training_pair(action)).then(
             function(data){
                 $("#labeler tbody").html('');
-                if (action !== 'finished'){
+                if (action !== 'finish'){
                     render_training_pair();
                 } else {
                     poll_worker();

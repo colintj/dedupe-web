@@ -16,7 +16,13 @@ logger = logging.getLogger(__name__)
 
 class WebDeduper(object):
     
-    def __init__(self, file_path=None, field_defs=None, training_data=None, data_sample=None):
+    def __init__(self, 
+            file_path=None, 
+            field_defs=None, 
+            training_data=None, 
+            data_sample=None, 
+            destroy_dupes=True):
+        self.destroy_dupes = destroy_dupes
         self.file_path = file_path
         self.data_d = self.readData()
         self.deduper = dedupe.Dedupe(field_defs, data_sample=data_sample)
@@ -30,30 +36,80 @@ class WebDeduper(object):
     def dedupe(self):
         threshold = self.deduper.threshold(self.data_d, recall_weight=2)
         clustered_dupes = self.deduper.match(self.data_d, threshold)
-        deduped_file_path = '%s-deduped.csv' % self.file_path
-        outp = open(deduped_file_path, 'wb')
-        membership = defaultdict(lambda: 'x')
-        for (cluster_id, cluster) in enumerate(clustered_dupes):
-            for record_id in cluster:
-                membership[record_id] = cluster_id
-        writer = csv.writer(outp)
-        with open(self.file_path, 'rU') as f_input:
-            reader = csv.reader(f_input)
-            header = reader.next()
-            header.insert(0,'Cluster ID')
-            writer.writerow(header)
-            for row in reader:
-                row_id = int(row[0])
-                cluster_id = membership[row_id]
-                row.insert(0, cluster_id)
-                writer.writerow(row)
+        logging.info('clustering done')
+        self.deduped_file_path = '%s-deduped.csv' % self.file_path
+        if self.destroy_dupes:
+            self.writeUniqueResults(clustered_dupes)
+        else:
+            self.writeResults(clustered_dupes)
         files = {
             'original': self.file_path,
             'training': self.training_data,
             'settings': self.settings_path,
+            'deduped': self.deduped_file_path,
         }
+        logging.info(files)
         return files
     
+    # ## Writing results
+    def writeResults(self, clustered_dupes):
+ 
+        # Write our original data back out to a CSV with a new column called 
+        # 'Cluster ID' which indicates which records refer to each other.
+ 
+        logging.info('saving results to: %s' % self.deduped_file_path)
+ 
+        cluster_membership = collections.defaultdict(lambda : 'x')
+        for cluster_id, cluster in enumerate(clustered_dupes):
+            for record_id in cluster:
+                cluster_membership[record_id] = cluster_id
+ 
+        writer = csv.writer(open(self.deduped_file_path, 'wb'))
+
+        reader = csv.reader(open(self.file_path, 'rb'))
+ 
+        heading_row = reader.next()
+        heading_row.insert(0, 'Cluster ID')
+        writer.writerow(heading_row)
+ 
+        for i, row in enumerate(reader):
+            row_id = i
+            cluster_id = cluster_membership[row_id]
+            row.insert(0, cluster_id)
+            writer.writerow(row)
+ 
+    # ## Writing results
+    def writeUniqueResults(self, clustered_dupes):
+ 
+        # Write our original data back out to a CSV with a new column called 
+        # 'Cluster ID' which indicates which records refer to each other.
+ 
+        logging.info('saving unique results to: %s' % self.deduped_file_path)
+ 
+        cluster_membership = {}
+        for (cluster_id, cluster) in enumerate(clustered_dupes):
+            logging.info(cluster)
+            for record_id in cluster:
+                cluster_membership[record_id] = cluster_id
+ 
+        writer = csv.writer(open(self.deduped_file_path, 'wb'))
+ 
+        reader = csv.reader(open(self.file_path, 'rb'))
+ 
+        heading_row = reader.next()
+        writer.writerow(heading_row)
+ 
+        seen_clusters = set()
+        for i, row in enumerate(reader):
+            row_id = i
+            if row_id in cluster_membership: 
+                cluster_id = cluster_membership[row_id]
+                if cluster_id not in seen_clusters:
+                    writer.writerow(row)
+                    seen_clusters.add(cluster_id)
+            else:
+                writer.writerow(row)
+
     def preProcess(self, column):
         column = AsciiDammit.asciiDammit(column)
         column = re.sub('  +', ' ', column)
