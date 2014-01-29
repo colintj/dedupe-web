@@ -40,7 +40,6 @@
             Finish Training &raquo;
         </button>
     </p>
-
 {% endblock %}
 {% block extra_scripts %}
 <script type="text/javascript">
@@ -98,6 +97,7 @@
         var action = $(this).attr('id');
         $.when(mark_training_pair(action)).then(
             function(data){
+                $("#labeler tbody").html('');
                 if (action !== 'finished'){
                     render_training_pair();
                 } else {

@@ -2,3 +2,5 @@
 *.pyc
 venv
 *.class
+upload_data/*.csv
+upload_data/*.json
