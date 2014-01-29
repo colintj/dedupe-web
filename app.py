@@ -9,7 +9,7 @@ import json
 import requests
 import re
 import os
-import pickle
+import copy
 from dedupe import AsciiDammit
 from dedupe.serializer import _to_json, dedupe_decoder
 import dedupe
@@ -25,7 +25,6 @@ from redis import Redis
 redis = Redis()
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'upload_data')
-SETTINGS_FOLDER = os.path.join(os.path.dirname(__file__), 'settings_data')
 ALLOWED_EXTENSIONS = set(['csv', 'json'])
 
 app = Flask(__name__)
@@ -96,7 +95,7 @@ def training_start():
                     field_defs[field] = {'type': 'String'}
                 data_d = readData(inp)
                 dedupers[deduper_id]['data_d'] = data_d
-                dedupers[deduper_id]['field_defs'] = field_defs
+                dedupers[deduper_id]['field_defs'] = copy.deepcopy(field_defs)
                 deduper = dedupe.Dedupe(field_defs)
                 deduper.sample(data_d, 150000)
                 dedupers[deduper_id]['deduper'] = deduper
@@ -181,23 +180,26 @@ def mark_pair():
             resp = make_response(json.dumps({'marked': True}))
             resp.headers['Content-Type'] = 'application/json'
         elif action == 'finish':
-            field_defs = dedupers[deduper_id]['field_defs']
             filename = dedupers[deduper_id]['filename']
             file_path = os.path.join(UPLOAD_FOLDER, filename)
             with open(file_path, 'wb') as f:
                 f.write(dedupers[deduper_id]['csv'])
             training_file_path = os.path.join(UPLOAD_FOLDER, '%s-training.json' % filename)
+            training_data = dedupers[deduper_id]['training_data']
             with open(training_file_path, 'wb') as f:
-                f.write(json.dumps(dedupers[deduper_id]['training_data'], default=_to_json))
+                f.write(json.dumps(training_data, default=_to_json))
+            field_defs = dedupers[deduper_id]['field_defs']
             args = {
                 'field_defs': field_defs,
+                'training_data': training_file_path,
                 'file_path': file_path,
-                'training_file': training_file_path,
             }
-            print field_defs
             rv = dedupeit.delay(**args)
             flask_session['deduper_key'] = rv.key
             resp = make_response(json.dumps({'finished': True}))
+            resp.headers['Content-Type'] = 'application/json'
+        else:
+            resp = make_response(json.dumps({'marked': True}))
             resp.headers['Content-Type'] = 'application/json'
     return resp
 
