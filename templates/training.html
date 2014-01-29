@@ -8,10 +8,9 @@
             <strong>Error!</strong> {{error}}
         </div>
     {% endif %}
-    <form role="form" action="{{ url_for('training')}}" method="post" enctype="multipart/form-data">
-        <div class="row">
-            {% if fields %}
-            <div class="col-md-6">
+    <div class="row">
+        <div class="col-md-6">
+            <form id="fields" role="form" action="{{ url_for('training_start')}}" method="post" enctype="multipart/form-data">
                 <div class="form-group">
                     <p class="help-block">Check the columns in your spreadsheet you want us to pay attention to... </p>
                     {% for field in fields %}
@@ -20,31 +19,33 @@
                         </label>
                         <br />
                     {% endfor %}
-                  </div>
-            </div>
-            <div class="col-md-6">
-            {% else %}
-            <div class="col-md-12">
-            {% endif %}
-                <div class="form-group">
-                    <p class="help-block">...or upload a predefined training file</p>
-                    <label for="training_file">Training file</label>
-                    <input type="file" id="training_file" name="training_file">
                 </div>
-            </div>
-        </div>
-        <div class="row">
-            <hr />
-            <div class="col-md-8">
                 <div class="checkbox">
                     <label>
                         <input type="checkbox" name="remove_duplicates"> Remove duplicates from output
                     </label>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <button type="submit" class="btn btn-default">Next &raquo;</button>
-            </div>
+                <button type="submit" class="btn btn-default" id="start-training">
+                    Start Training &raquo;
+                </button>
+            </form>
         </div>
-    </form>
+        <div class="col-md-6">
+            <form role="form" action="{{ url_for('dedupe_start')}}" method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <p class="help-block">...or upload a predefined training file</p>
+                    <label for="training_file">Training file</label>
+                    <input type="file" id="training_file" name="training_file">
+                </div>
+                <div class="checkbox">
+                    <label>
+                        <input type="checkbox" name="remove_duplicates"> Remove duplicates from output
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-default" id="start-training">
+                    Start Deduping &raquo;
+                </button>
+            </form>
+        </div>
+    </div>
 {% endblock %}

@@ -6,33 +6,29 @@ import dedupe
 from cStringIO import StringIO
 from collections import defaultdict
 import logging
-from models import DedupeSession
 from queue import queuefunc
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from numpy import nan
+from datetime import datetime
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-engine = create_engine('sqlite:///deduper.db')
-Session = sessionmaker(bind=engine)
-sql_session = Session()
 
 class WebDeduper(object):
     
-    def __init__(self, session_id):
-        self.session = sql_session.query(DedupeSession).get(session_id)
-        fields = json.loads(self.session.field_definitions)
-        self.deduper = dedupe.Dedupe(fields)
-
-    def dedupe(self):
-        self.deduper.readTraining(self.session.training_file_path)
+    def __init__(self, field_defs=None, file_path=None, training_file=None):
+        self.file_path = file_path
+        self.training_file = training_file
+        self.deduper = dedupe.Dedupe(field_defs)
         data_d = self.readData()
         self.deduper.sample(data_d, 150000)
+
+    def dedupe(self):
+        self.deduper.readTraining(self.training_file)
         self.deduper.train()
         threshold = self.deduper.threshold(data_d, recall_weight=2)
         clustered_dupes = self.deduper.match(data_d, threshold)
-        outp = StringIO()
+        deduped_file_path = '%s-deduped.csv' % os.path.dirname(self.file_path)
+        outp = open(deduped_file_path, 'wb')
         membership = defaultdict(lambda: 'x')
         for (cluster_id, cluster) in enumerate(clustered_dupes):
             for record_id in cluster:
@@ -48,7 +44,7 @@ class WebDeduper(object):
                 cluster_id = membership[row_id]
                 row.insert(0, cluster_id)
                 writer.writerow(row)
-        return outp.getvalue()
+        return deduped_file_path
     
     def preProcess(self, column):
         column = AsciiDammit.asciiDammit(column)
@@ -59,7 +55,7 @@ class WebDeduper(object):
 
     def readData(self):
         data = {}
-        f = open(self.session.file_path, 'rU')
+        f = open(self.file_path, 'rU')
         reader = csv.DictReader(f)
         for i, row in enumerate(reader):
             clean_row = [(k, self.preProcess(v)) for (k,v) in row.items()]
@@ -77,8 +73,8 @@ class WebDeduper(object):
             return nan
 
 @queuefunc
-def dedupeit(session_id):
-    deduper = WebDeduper(session_id)
+def dedupeit(**kwargs):
+    deduper = WebDeduper(**kwargs)
     return deduper.dedupe()
 
 if __name__ == '__main__':
