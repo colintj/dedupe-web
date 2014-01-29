@@ -8,10 +8,22 @@
         </div>
     {% endif %}
 
-    <table id='labeler' class='table table-bordered'></table>
+    <div class='col-md-8'>
+        <table id='labeler' class='table table-bordered'>
+            <thead>
+                <tr>
+                    <th class='field-name'></th>
+                    <th>Record A</th>
+                    <th>Record B</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
 
     <div class='clearfix'></div>
-    <h4>Are these the same?</h4>
+    <h4>Do these two records refer to the same thing?</h4>
     <p class='pull-left'>
         <button class="btn btn-success" id="yes">
             Yes
@@ -19,7 +31,7 @@
         <button class="btn btn-danger" id="no">
             No
         </button>
-        <button class="btn btn-warning" id="unsure">
+        <button class="btn btn-default" id="unsure">
             Unsure
         </button>
     </p>
@@ -32,65 +44,25 @@
 {% endblock %}
 {% block extra_scripts %}
 <script type="text/javascript">
-    $(document).ready(function(){
-
-        var template = "\
-          <tr>\
-            <td><strong>{{field}}</strong></td>\
-            <td>{{left}}</td>\
-            <td>{{right}}</td>\
-          </tr>\
-        ";
-        $('.btn').on('click', function(e){
-            e.preventDefault();
-            $('#labeler').spin('large');
-            var action = $(this).attr('id');
-            $.when(mark_training_pair(action)).then(
-                function(data){
-                    if (action !== 'finished'){
-                        render_training_pair();
-                    } else {
-                        poll_worker();
-                    }
-                }
-            )
-        });
-
-        render_training_pair();
-    });
 
     function render_training_pair(){
-        console.log('rendering training pair');
-        $.when(get_training_pair()).then(
-            function(data){
-                $('#labeler').spin(false);
+        $.when( $.getJSON('/get-pair/') ).then(
+            function(data, textStatus, jqXHR ){
 
-                var label_data = [];
+                $('#labeler').spin(false);
                 $.each(data, function(i, json){
 
-                    // [
-                    //     {"field": "city", "left": "new york", "right": "chicago"}
-                    // ]
-
-                    // var label_row
-                    // $.each(json['fields'], function(i, f){
-
-                    // })
-
-                    $("#labeler").append(Mustache.render(template, json));
+                    var diff_class = 'danger';
+                    if (json.left == json.right)
+                        diff_class = 'success'
+                    var template = "\
+                    <tr>\
+                        <td class='field-name'>" + json.field + "</td>\
+                        <td class='" + diff_class + "'>" + json.left + "</td>\
+                        <td class='" + diff_class + "'>" + json.right + "</td>\
+                    </tr>"
+                    $("#labeler tbody").append(template);
                 })
-
-
-                // var items = '<div class="col-md-6"><p>';
-                // $.each(data.left, function(key, value){
-                //     items += '<strong>' + key + '</strong> ' + value + '<br />';
-                // })
-                // items += '</p></div><div class="col-md-6"><p>';
-                // $.each(data.right, function(key, value){
-                //     items += '<strong>' + key + '</strong> ' + value + '<br />';
-                // });
-                // items += '</p></div>';
-                // $('#labeler').html(items);
             }
         )
     }
@@ -102,12 +74,7 @@
             data: {'action': action}
         })
     }
-    function get_training_pair(){
-        return $.ajax({
-            url: '/get-pair/',
-            dataType: 'json'
-        })
-    }
+
     function poll_worker(){
         $.ajax({
             url: '/working/',
@@ -124,5 +91,22 @@
     function display_links(data){
         console.log(data);
     }
+
+    $('.btn').on('click', function(e){
+        e.preventDefault();
+        $('#labeler').spin('large');
+        var action = $(this).attr('id');
+        $.when(mark_training_pair(action)).then(
+            function(data){
+                if (action !== 'finished'){
+                    render_training_pair();
+                } else {
+                    poll_worker();
+                }
+            }
+        )
+    });
+
+    render_training_pair();
 </script>
 {% endblock %}

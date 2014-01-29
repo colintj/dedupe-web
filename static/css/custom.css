@@ -73,3 +73,11 @@ body {
 }
 
 .nowrap { white-space:nowrap; }
+
+#labler td, #labeler th {
+  width: 30%;
+}
+
+.field-name {
+  font-weight: bold;
+}
