@@ -49,28 +49,29 @@
             var action = $(this).attr('id');
             $.when(mark_training_pair(action)).then(
                 function(data){
-                    $.when(get_training_pair()).then(
-                        function(data){
-                            $('#labeler').spin(false);
-                            var items = '<div class="col-md-6"><p>';
-                            $.each(data.left, function(key, value){
-                                items += '<strong>' + key + '</strong> ' + value + '<br />';
-                            })
-                            items += '</p></div><div class="col-md-6"><p>';
-                            $.each(data.right, function(key, value){
-                                items += '<strong>' + key + '</strong> ' + value + '<br />';
-                            });
-                            items += '</p></div>';
-                            $('#labeler').html(items);
-                        }
-                    )
+                    if (action !== 'finished'){
+                        $.when(get_training_pair()).then(
+                            function(data){
+                                $('#labeler').spin(false);
+                                var items = '<div class="col-md-6"><p>';
+                                $.each(data.left, function(key, value){
+                                    items += '<strong>' + key + '</strong> ' + value + '<br />';
+                                })
+                                items += '</p></div><div class="col-md-6"><p>';
+                                $.each(data.right, function(key, value){
+                                    items += '<strong>' + key + '</strong> ' + value + '<br />';
+                                });
+                                items += '</p></div>';
+                                $('#labeler').html(items);
+                            }
+                        )
+                    } else {
+                        poll_worker();
+                    }
                 }
             )
         })
     });
-    function make_comparator(fields, comp){
-        console.log(comp);
-    }
     function mark_training_pair(action){
         return $.ajax({
             url: '/mark-pair/',
@@ -83,6 +84,22 @@
             url: '/get-pair/',
             dataType: 'json'
         })
+    }
+    function poll_worker(){
+        $.ajax({
+            url: '/worker/',
+            success: function(data){
+                if (data.ready){
+                    display_links(data);
+                } else {
+                    setTimeout(poll_worker, 3000);
+                }
+            },
+            dataType: 'json',
+        })
+    }
+    function display_links(data){
+        console.log(data);
     }
 </script>
 {% endblock %}

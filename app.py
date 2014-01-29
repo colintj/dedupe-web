@@ -16,7 +16,6 @@ import dedupe
 from deduper import dedupeit
 from cStringIO import StringIO
 import csv
-from models import DedupeSession, Training
 from queue import DelayedResult
 from uuid import uuid4
 import collections
