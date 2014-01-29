@@ -143,7 +143,7 @@ def get_pair():
             d = {
                 'field': field,
                 'left': left[field],
-                'right' right[field],
+                'right': right[field],
             }
             data.append(d)
         resp = make_response(json.dumps(data))
