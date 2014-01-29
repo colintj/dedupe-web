@@ -22,7 +22,7 @@ class WebDeduper(object):
         self.deduper = dedupe.Dedupe(field_defs, data_sample=data_sample)
         self.deduper.readTraining(training_data)
         self.deduper.train()
-        self.settings_path = '%s-settings' % file_path
+        self.settings_path = '%s-settings.dedupe' % file_path
         self.training_data = training_data
         self.deduper.writeTraining(self.training_data)
         self.deduper.writeSettings(self.settings_path)
@@ -52,7 +52,7 @@ class WebDeduper(object):
             'training': self.training_data,
             'settings': self.settings_path,
         }
-        return json.dumps(files)
+        return files
     
     def preProcess(self, column):
         column = AsciiDammit.asciiDammit(column)
