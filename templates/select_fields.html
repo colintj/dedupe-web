@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
-    <h2>Training</h2>
-    <h4>File saved: {{ filename }}</h4>
+    <h2>2. Fields to compare</h2>
     {% if error %}
         <div class="alert alert-warning alert-dismissable">
             <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
@@ -10,7 +9,7 @@
     {% endif %}
     <div class="row">
         <div class="col-md-6">
-            <form id="fields" role="form" action="{{ url_for('training_start')}}" method="post" enctype="multipart/form-data">
+            <form id="fields" role="form" action="{{ url_for('select_fields')}}" method="post" enctype="multipart/form-data">
                 <div class="form-group">
                     <p class="help-block">Check the columns in your spreadsheet you want us to pay attention to... </p>
                     {% for field in fields %}

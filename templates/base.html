@@ -25,28 +25,38 @@
   <body>
 
     <div class="container">
-      <div class='col-md-10 col-md-offset-1'>
 
-        <div class="jumbotron">
-          <h2>Spreadsheet Deduper</h2>
-          <h1>
+      <!-- Static navbar -->
+      <div class="navbar navbar-default" role="navigation">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">
             <i class='icon-copy'></i>
             <i class='icon-long-arrow-right'></i>
             <i class='icon-file-alt'></i>
-          </h1>
+            Spreadsheet Deduper
+          </a>
         </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="/">Home</a></li>
+            <li><a href="/help/">Help</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
 
-        <div class='col-md-12'>
-            {% block content %}{% endblock %}
-        </div>
+      {% block content %}{% endblock %}
 
-        <div class='clearfix'></div>
+      <br />
+      <div class='clearfix'></div>
 
-        <br />
-
-        <div class="footer">
-          <p>&copy; <a href='http://datamade.us'>DataMade</a></p>
-        </div>
+      <div class="footer">
+        <p>&copy; <a href='http://datamade.us'>DataMade</a></p>
       </div>
     </div> <!-- /container -->
 

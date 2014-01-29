@@ -51,7 +51,7 @@ def index():
                 'filename': secure_filename(str(time.time()) + "_" + f.filename)
             }
             flask_session['session_id'] = deduper_id
-            return redirect(url_for('training_start'))
+            return redirect(url_for('select_fields'))
         else:
             # probably need to make sure to handle the error in the template
             error = 'Error uploading file'
@@ -74,8 +74,8 @@ def readData(f):
         data[row_id] = dedupe.core.frozendict(clean_row)
     return data
 
-@app.route('/training-start/', methods=['GET', 'POST'])
-def training_start():
+@app.route('/select_fields/', methods=['GET', 'POST'])
+def select_fields():
     if not flask_session.get('session_id'):
         return redirect(url_for('index'))
     else:
@@ -99,7 +99,7 @@ def training_start():
                 deduper.sample(data_d, 150000)
                 dedupers[deduper_id]['deduper'] = deduper
                 return redirect(url_for('training_run'))
-        return render_app_template('training.html', fields=fields, filename=filename)
+        return render_app_template('select_fields.html', fields=fields, filename=filename)
 
 @app.route('/training-run/')
 def training_run():

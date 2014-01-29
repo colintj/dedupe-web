@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
 {% block content %}
-<h2>Let's get started</h2>
+<h2>1. Upload a spreadsheet</h2>
 <form role="form" action="/" method="post" enctype="multipart/form-data">
     <div class="form-group">
         <label for="input_file">CSV file</label>
         <input type="file" id="input_file" name="input_file">
-        <p class="help-block">A spreadsheet on your computer with duplicates.</p>
+        <p class="help-block">A spreadsheet on your computer with duplicates (< 5mb).</p>
     </div>
     <button type="submit" class="btn btn-default">Next &raquo;</button>
 </form>
