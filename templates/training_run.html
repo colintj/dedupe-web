@@ -89,7 +89,11 @@
     }
     function display_links(data){
         $('#labeler').spin(false);
-        console.log(data);
+        // original, training, settings, deduped
+        var template = "<p><strong>Deduplicated file:</strong>" + data.deduped + "</p>";
+        template += "<p><strong>Training file:</strong>" + data.training + "</p>";
+        template += "<p><strong>Settings file:</strong>" + data.settings + "</p>";
+        template += "<p><strong>Original file:</strong>" + data.original + "</p>";
     }
 
     $('.btn').on('click', function(e){
