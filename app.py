@@ -1,7 +1,5 @@
 from flask import Flask, request, make_response, render_template, \
     session as flask_session, redirect, url_for, send_from_directory, jsonify
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from werkzeug import secure_filename
 import time
 from datetime import datetime
