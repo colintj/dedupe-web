@@ -43,10 +43,10 @@ class WebDeduper(object):
         else:
             self.writeResults(clustered_dupes)
         files = {
-            'original': self.file_path,
-            'training': self.training_data,
-            'settings': self.settings_path,
-            'deduped': self.deduped_file_path,
+            'original': os.path.relpath(self.file_path, __file__),
+            'training': os.path.relpath(self.training_data, __file__),
+            'settings': os.path.relpath(self.settings_path, __file__),
+            'deduped': os.path.relpath(self.deduped_file_path, __file__),
         }
         logging.info(files)
         return files
