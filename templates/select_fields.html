@@ -14,7 +14,7 @@
             <div class='well'>
                 <form id="fields" role="form" action="{{ url_for('select_fields')}}" method="post" enctype="multipart/form-data">
                     <div class="form-group">
-                        <p class="help-block">Check the columns in your spreadsheet you want us to pay attention to... </p>
+                        <p class="help-block">Check the columns in your spreadsheet you want us to pay attention to. </p>
                         {% for field in fields %}
                             <label>
                                 <input type="checkbox" name="{{field}}"> {{field}}
@@ -22,11 +22,15 @@
                             <br />
                         {% endfor %}
                     </div>
+
+                    <hr />
+                    <h4>Additional settings</h4>
                     <div class="checkbox">
                         <label>
                             <input type="checkbox" name="remove_duplicates"> Keep duplicates in output (we'll mark them)
                         </label>
                     </div>
+                    <hr />
                     <button type="submit" class="btn btn-default" id="start-training">
                         Start Training &raquo;
                     </button>
