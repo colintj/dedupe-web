@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
+    {% include "dedupe_steps.html" %}
     <h2>3. Training</h2>
     {% if error %}
         <div class="alert alert-warning alert-dismissable">
@@ -74,29 +75,6 @@
         })
     }
 
-    function poll_worker(){
-        $.ajax({
-            url: '/working/',
-            success: function(data){
-                if (data.ready){
-                    display_links(data);
-                } else {
-                    setTimeout(poll_worker, 3000);
-                }
-            },
-            dataType: 'json',
-        })
-    }
-    function display_links(data){
-        $('#labeler').spin(false);
-        // original, training, settings, deduped
-        var template = "<p><strong><a href='/" + data.result.deduped + "'>Deduplicated file</strong></p>";
-        template += "<p><strong><a href='/" + data.result.training + "'>Training file</strong></p>";
-        template += "<p><strong><a href='/" + data.result.settings + "'>Settings file</strong></p>";
-        template += "<p><strong><a href='/" + data.result.original + "'>Original file</strong></p>";
-        $('#labeler').append(template);
-    }
-
     $('.btn').on('click', function(e){
         e.preventDefault();
         $('#labeler').spin('large');
@@ -107,7 +85,7 @@
                 if (action !== 'finish'){
                     render_training_pair();
                 } else {
-                    poll_worker();
+                    window.location = "/dedupe_finished/";
                 }
             }
         )

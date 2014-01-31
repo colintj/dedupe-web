@@ -1,8 +1,8 @@
 {% block content %}
 <ul class='nav nav-wizard'>
-  <li class='active'><a href='#'>1 - Upload</a></li>
-  <li><a href='#'>2 - Fields to compare</a></li>
-  <li><a href='#'>3 - Training</a></li>
-  <li><a href='#'>4 - Finished</a></li>
+  <li class='{% if request.path == "/" %} active {% endif %}'>1 - Upload</li>
+  <li class='{% if request.path == "/select_fields/" %} active {% endif %}'>2 - Fields to compare</li>
+  <li class='{% if request.path == "/training_run/" %} active {% endif %}'>3 - Training</li>
+  <li class='{% if request.path == "/dedupe_finished/" %} active {% endif %}'>4 - Dedupe it!</li>
 </ul>
 {% endblock %}

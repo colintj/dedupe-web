@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
+    {% include "dedupe_steps.html" %}
     <h2>2. Fields to compare</h2>
 
     {% if error %}
@@ -9,7 +10,7 @@
         </div>
     {% endif %}
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-8">
             <div class='well'>
                 <form id="fields" role="form" action="{{ url_for('select_fields')}}" method="post" enctype="multipart/form-data">
                     <div class="form-group">
@@ -23,7 +24,7 @@
                     </div>
                     <div class="checkbox">
                         <label>
-                            <input type="checkbox" name="remove_duplicates"> Remove duplicates from output
+                            <input type="checkbox" name="remove_duplicates"> Keep duplicates in output (we'll mark them)
                         </label>
                     </div>
                     <button type="submit" class="btn btn-default" id="start-training">
@@ -32,7 +33,7 @@
                 </form>
             </div>
         </div>
-        <div class="col-md-6">
+        <!-- <div class="col-md-6">
             <div class='well'>
                 {#
                 <form role="form" action="{{ url_for('dedupe_start')}}" method="post" enctype="multipart/form-data">
@@ -52,6 +53,6 @@
                 </form>
                 #}
             </div>
-        </div>
+        </div> -->
     </div>
 {% endblock %}

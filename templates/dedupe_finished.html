@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block content %}
+    {% include "dedupe_steps.html" %}
+    <h2>4. Dedupe it!</h2>
+
+    <div class="col-md-8">
+        <div class='well'>
+            <h4>Deduping ...</h4>
+            <p>This may take a few minutes. We are taking what we've learned from your training and applying it to the rest of your dataset.</p>
+
+            <p>When finished, your data will be available to download below.</p>
+            <hr />
+            <div id='results'>
+                <br />
+            </div>
+        </div>
+    </div>
+    
+{% endblock %}
+{% block extra_scripts %}
+<script type="text/javascript">
+
+    function display_links(data){
+        $('#results').spin(false);
+        // original, training, settings, deduped
+        var template = "\
+            <h4>Finished!</h4>\
+            <p>\
+            <a class='btn btn-success btn-lg' href='/" + data.result.deduped + "'>\
+                <i class='icon-download'></i>\
+                Download your deduplicated file\
+            </a><br /><br />\
+            <a class='btn btn-default' href='/" + data.result.training + "'>\
+                <i class='icon-download'></i>\
+                Download your training\
+            </a>\
+            </p>";
+        $('#results').append(template);
+    }
+
+    function poll_worker(){
+        $.ajax({
+            url: '/working/',
+            success: function(data){
+                if (data.ready){
+                    display_links(data);
+                } else {
+                    setTimeout(poll_worker, 3000);
+                }
+            },
+            dataType: 'json',
+        })
+    }
+
+    $('#results').spin({'left': 0});
+    poll_worker();
+
+</script>
+{% endblock %}

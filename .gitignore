@@ -4,3 +4,4 @@ venv
 *.class
 upload_data/*.csv
 upload_data/*.json
+upload_data/*.dedupe

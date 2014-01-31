@@ -99,7 +99,7 @@ def select_fields():
                 return redirect(url_for('training_run'))
         return render_app_template('select_fields.html', fields=fields, filename=filename)
 
-@app.route('/training-run/')
+@app.route('/training_run/')
 def training_run():
     if not flask_session.get('session_id'):
         return redirect(url_for('index'))
@@ -210,6 +210,14 @@ def mark_pair():
     resp = make_response(json.dumps(resp))
     resp.headers['Content-Type'] = 'application/json'
     return resp
+
+@app.route('/dedupe_finished/')
+def dedupe_finished():
+  return render_app_template("dedupe_finished.html")
+
+@app.route('/help/')
+def help():
+  return render_app_template("help.html")
 
 @app.route('/working/')
 def working():
