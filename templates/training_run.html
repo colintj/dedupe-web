@@ -105,6 +105,9 @@
         var no_class = 'warning';
         if (counter.no >= 10) no_class = 'success';
 
+        if (counter.no >= 10 && counter.yes >= 10)
+            $("#finish").attr("class", "btn btn-primary");
+
         $("#num-yes span").html(counter.yes);
         $("#num-yes").attr('class', yes_class);
         $("#num-no span").html(counter.no);
