@@ -60,12 +60,34 @@
     </p>
     <p class='pull-right'>
         <button class="btn btn-default" id="finish">
-            Finish Training &raquo;
+            Finish &raquo;
         </button>
     </p>
+
+    <div class="modal fade" id='finished-modal'>
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title">That's enough training!</h4>
+          </div>
+          <div class="modal-body">
+            <p>You've given us enough training to accurately deduplicate your spreadsheet. Adding more will continue to improve the results, but you can stop now.</p>
+          </div>
+          <div class="modal-footer">
+            <a href='#' data-dismiss="modal">Continue training</a>&nbsp;&nbsp;
+            <button type="button" class="btn btn-primary" id='finished-modal-btn'>Finish &raquo;</button>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+
+
 {% endblock %}
 {% block extra_scripts %}
 <script type="text/javascript">
+
+    var modal_shown = false;
 
     function render_training_pair(){
         $.when( $.getJSON('/get-pair/') ).then(
@@ -105,14 +127,18 @@
         var no_class = 'warning';
         if (counter.no >= 10) no_class = 'success';
 
-        if (counter.no >= 10 && counter.yes >= 10)
+        if (counter.no >= 10 && counter.yes >= 10) {
+            if (!modal_shown) {
+                $('#finished-modal').modal();
+                modal_shown = true;
+            }
             $("#finish").attr("class", "btn btn-primary");
-
+        }
+            
         $("#num-yes span").html(counter.yes);
         $("#num-yes").attr('class', yes_class);
         $("#num-no span").html(counter.no);
         $("#num-no").attr('class', no_class);
-
         $("#num-unsure span").html(counter.unsure);
     }
 
@@ -123,7 +149,7 @@
         $.when(mark_training_pair(action)).then(
             function(data){
                 $("#labeler tbody").html('');
-                if (action !== 'finish'){
+                if (action !== 'finish' && action !== 'finished-modal-btn'){
                     update_your_training(data.counter);
                     render_training_pair();
                 } else {
