@@ -183,7 +183,7 @@ def mark_pair():
             with open(training_file_path, 'wb') as f:
                 f.write(json.dumps(training_data, default=_to_json))
             field_defs = dedupers[deduper_id]['field_defs']
-            sample = dedupers[deduper_id]['deduper'].data_sample
+            sample = deduper.data_sample
             args = {
                 'field_defs': field_defs,
                 'training_data': training_file_path,
@@ -197,16 +197,12 @@ def mark_pair():
             counter['unsure'] += 1
             dedupers[deduper_id]['counter'] = counter
             resp = {'counter': counter}
-        resp['weights'] = {}
-        for (k1, v1) in deduper.data_model.items():
-            try:
-                for (k2, v2) in v1.items():
-                    resp['weights'][k2] = v2['weight']
-            except AttributeError:
-                resp['weights'][k1] = v1
         deduper.markPairs(labels)
         dedupers[deduper_id]['training_data'] = labels
         dedupers[deduper_id]['counter'] = counter
+        if resp.get('finished'):
+            del deduper
+            del dedupers[deduper_id]
     resp = make_response(json.dumps(resp))
     resp.headers['Content-Type'] = 'application/json'
     return resp

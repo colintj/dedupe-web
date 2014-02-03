@@ -130,7 +130,9 @@ class WebDeduper(object):
 @queuefunc
 def dedupeit(**kwargs):
     deduper = WebDeduper(**kwargs)
-    return deduper.dedupe()
+    files = deduper.dedupe()
+    del deduper
+    return files
 
 if __name__ == '__main__':
     import argparse
