@@ -205,6 +205,7 @@ def mark_pair():
         dedupers[deduper_id]['training_data'] = labels
         dedupers[deduper_id]['counter'] = counter
         if resp.get('finished'):
+            deduper.pool.terminate()
             del deduper
             del dedupers[deduper_id]
     resp = make_response(json.dumps(resp))

@@ -7,25 +7,22 @@ import dedupe
 from cStringIO import StringIO
 from collections import defaultdict
 import logging
-from queue import queuefunc
-from numpy import nan
 from datetime import datetime
+from queue import queuefunc
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class WebDeduper(object):
     
-    def __init__(self, 
+    def __init__(self, deduper,
             file_path=None, 
-            field_defs=None, 
             training_data=None, 
-            data_sample=None, 
             destroy_dupes=True):
         self.destroy_dupes = destroy_dupes
         self.file_path = file_path
         self.data_d = self.readData()
-        self.deduper = dedupe.Dedupe(field_defs, data_sample=data_sample)
+        self.deduper = deduper
         self.deduper.readTraining(training_data)
         self.deduper.train()
         self.settings_path = '%s-settings.dedupe' % file_path
@@ -129,9 +126,13 @@ class WebDeduper(object):
     
 @queuefunc
 def dedupeit(**kwargs):
-    deduper = WebDeduper(**kwargs)
+    d = dedupe.Dedupe(kwargs['field_defs'], kwargs['data_sample'])
+    deduper = WebDeduper(d, 
+        file_path=kwargs['file_path'],
+        training_data=kwargs['training_data'])
     files = deduper.dedupe()
-    del deduper
+    d.pool.terminate()
+    del d
     return files
 
 if __name__ == '__main__':
