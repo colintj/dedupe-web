@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class='col-md-3'>
+  <div class='well'>
+    <h3>Sections</h3>
+    <ol>
+      <li><a href='#what-is-this'>What is this?</a></li>
+      <li><a href='#code'>Code</a></li>
+      <li><a href='#team-and-credits'>Team and credits</a></li>
+      <li><a href='#contact-us'>Contact us</a></li>
+    </ol>
+  </div>
+</div>
+<div class="col-md-9">
+  <h1>About</h1>
+
+  <h3 id='what-is-this'>What is this?</h3>
+
+  <p>Spreadsheet Deduper is an online tool for finding and removing duplicates from a spreadsheet. It uses the <a href='https://github.com/open-city/dedupe'>dedupe entity resolution library</a> to quickly and accurately identify duplicate rows based on training data that you give it.</p>
+
+  <h3 id='code'>Code</h3>
+
+  <p>All of the code for this project is open source. You can find, view and fork it <a href='https://github.com/datamade/dedupe-web/'>on github</a>.</p>
+
+  <p>Technologies used:</p>
+
+  <ul>
+      <li><a href='https://github.com/open-city/dedupe'>Dedupe</a> - open source entity resolution library</li>
+      <li><a href='https://www.djangoproject.com/'>Flask</a> - web framework</li>
+      <li><a href='http://getbootstrap.com'>Bootstrap</a> - HTML/CSS layout</li>
+  </ul>
+
+  <h3 id='team-and-credits'>Team and credits</h3>
+
+  <p>Spreadsheet Deduper was created and maintained by DataMade. We are: </p>
+  <ul>
+    <li>Forest Gregg</li>
+    <li>Derek Eder</li>
+    <li>Eric van Zanten</li>
+  </ul>
+
+  <h3 id='contact-us'>Contact us</h3>
+
+  <p>
+    Having trouble? Need to dedupe some bigger or more complicated data? Contact us at
+    <a href='mailto:info@datamade.us'>info@datamade.us</a>
+  </p>
+
+  <p>
+    Notice a bug or want to contribute to this project? <a href='https://github.com/datamade/dedupe-web'>Find us on Github</a>.
+  </p>
+</div>
+
+
+{% endblock %}

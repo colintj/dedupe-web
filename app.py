@@ -216,9 +216,9 @@ def mark_pair():
 def dedupe_finished():
   return render_app_template("dedupe_finished.html")
 
-@app.route('/help/')
-def help():
-  return render_app_template("help.html")
+@app.route('/about/')
+def about():
+  return render_app_template("about.html")
 
 @app.route('/working/')
 def working():
