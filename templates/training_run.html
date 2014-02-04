@@ -2,13 +2,7 @@
 {% block content %}
     {% include "dedupe_steps.html" %}
     <h2>3. Training</h2>
-    {% if error %}
-        <div class="alert alert-warning alert-dismissable">
-            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-            <strong>Error!</strong> {{error}}
-        </div>
-    {% endif %}
-
+    {% include "error.html" %}
     <div class='col-md-8'>
         <table id='labeler' class='table table-bordered'>
             <thead>
@@ -49,17 +43,19 @@
     <h4>Do these two records refer to the same thing?</h4>
     <p class='pull-left'>
         <button class="btn btn-success" id="yes">
+            <i class='icon-ok'></i>
             Yes
         </button>
         <button class="btn btn-danger" id="no">
+            <i class='icon-remove'></i>
             No
         </button>
         <button class="btn btn-default" id="unsure">
             Unsure
         </button>
         &nbsp;&nbsp;&nbsp;
-        <button class="btn btn-default" id="finish">
-            Finish training &raquo;
+        <button class="btn btn-primary hidden" id="finish">
+            Finished training &raquo;
         </button>
     </p>
 
@@ -75,7 +71,7 @@
           </div>
           <div class="modal-footer">
             <a href='#' data-dismiss="modal">Continue training</a>&nbsp;&nbsp;
-            <button type="button" class="btn btn-primary" id='finished-modal-btn'>Finish &raquo;</button>
+            <button type="button" class="btn btn-primary" id='finished-modal-btn'>Finished &raquo;</button>
           </div>
         </div><!-- /.modal-content -->
       </div><!-- /.modal-dialog -->
@@ -132,7 +128,11 @@
                 $('#finished-modal').modal();
                 modal_shown = true;
             }
-            $("#finish").attr("class", "btn btn-primary");
+        }
+
+        if (counter.no >= (training_threshold / 2) && counter.yes >= (training_threshold / 2)) {
+            console.log('blah!');
+            $("#finish").removeClass('hidden');
         }
             
         $("#num-yes span").html(counter.yes);

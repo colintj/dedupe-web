@@ -2,6 +2,7 @@
 {% block content %}
 {% include "dedupe_steps.html" %}
 <h2>1. Upload a spreadsheet</h2>
+{% include "error.html" %}
 <div class="col-md-8">
   <div class='well'>
     <form role="form" action="/" method="post" enctype="multipart/form-data">
@@ -10,6 +11,7 @@
             <input type="file" id="input_file" name="input_file">
             <p class="help-block">Only files that are <strong>smaller than 5mb</strong>, please.</p>
         </div>
+        <hr />
         <button type="submit" class="btn btn-primary">Next &raquo;</button>
     </form>
   </div>

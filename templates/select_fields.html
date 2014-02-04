@@ -2,13 +2,7 @@
 {% block content %}
     {% include "dedupe_steps.html" %}
     <h2>2. Fields to compare</h2>
-
-    {% if error %}
-        <div class="alert alert-warning alert-dismissable">
-            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-            <strong>Error!</strong> {{error}}
-        </div>
-    {% endif %}
+    {% include "error.html" %}
     <div class="row">
         <div class="col-md-8">
             <div class='well'>
@@ -23,13 +17,6 @@
                         {% endfor %}
                     </div>
 
-                    <hr />
-                    <h4>Additional settings</h4>
-                    <div class="checkbox">
-                        <label>
-                            <input type="checkbox" name="remove_duplicates"> Keep duplicates in output (we'll mark them)
-                        </label>
-                    </div>
                     <hr />
                     <button type="submit" class="btn btn-primary" id="start-training">
                         Start Training &raquo;

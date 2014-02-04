@@ -51,8 +51,7 @@ def index():
             flask_session['session_id'] = deduper_id
             return redirect(url_for('select_fields'))
         else:
-            # probably need to make sure to handle the error in the template
-            error = 'Error uploading file'
+            error = 'Error uploading file. Did you forget to select one?'
             status_code = 500
     return make_response(render_app_template('index.html', error=error), status_code)
 
@@ -74,6 +73,8 @@ def readData(f):
 
 @app.route('/select_fields/', methods=['GET', 'POST'])
 def select_fields():
+    status_code = 200
+    error = None
     if not flask_session.get('session_id'):
         return redirect(url_for('index'))
     else:
@@ -97,7 +98,10 @@ def select_fields():
                 deduper.sample(data_d, 150000)
                 dedupers[deduper_id]['deduper'] = deduper
                 return redirect(url_for('training_run'))
-        return render_app_template('select_fields.html', fields=fields, filename=filename)
+            else:
+                error = 'You must select at least one field to compare on.'
+                status_code = 500
+        return render_app_template('select_fields.html', error=error, fields=fields, filename=filename)
 
 @app.route('/training_run/')
 def training_run():
