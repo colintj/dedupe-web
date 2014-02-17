@@ -3,15 +3,50 @@ import re
 import os
 import json
 from dedupe import AsciiDammit
+from dedupe.serializer import _to_json, dedupe_decoder
 import dedupe
 from cStringIO import StringIO
 from collections import defaultdict
 import logging
 from datetime import datetime
 from queue import queuefunc
+from uuid import uuid4
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+class DedupeShell(object):
+    def __init__(self, raw=None, filename=None):
+        self._id = str(uuid4())
+        self.raw = raw
+        self.filename = filename
+        self.training_dict = None
+        self.training_file = None
+        self.counter = None
+
+    def add_fields(self, field_defs=None, sample=None):
+        self.field_defs = field_defs
+        self.sample = sample
+
+    def set_current_pair(self, current_pair):
+        self.current_pair = current_pair
+
+    def set_counter(self, counter):
+        self.counter = counter
+
+    def set_training(self, training):
+        self.training_dict = training
+        self.training_file = os.path.join(UPLOAD_FOLDER, '%s-training.json' % self.filename)
+        o = open(self.training_file, 'wb')
+        o.write(json.dumps(training, default=_to_json))
+        o.close()
+
+    def __repr__(self):
+        return '<Deduper %r>' % (self.filename)
+
+@queuefunc
+def object_echo(o):
+    return o
 
 class WebDeduper(object):
     
@@ -135,16 +170,3 @@ def dedupeit(**kwargs):
     del d
     return files
 
-if __name__ == '__main__':
-    import argparse
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultHelpFormatter
-    )
-    parser.add_argument('--session_id', type=int,
-        help='Database row id for session')
-    args = parser.parse_args()
-    engine = create_engine('sqlite:///deduper.db')
-    Session = sessionmaker(bind=engine)
-    sql_session = Session()
-    deduper = WebDeduper(args, sql_session)
-    deduper.dedupe()
