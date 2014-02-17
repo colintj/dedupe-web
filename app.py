@@ -18,6 +18,7 @@ from queue import DelayedResult
 from uuid import uuid4
 import collections
 from redis import Redis
+from multiprocessing.connection import Client
 
 redis = Redis()
 
@@ -30,8 +31,6 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 app.config['REDIS_QUEUE_KEY'] = 'deduper'
 app.secret_key = os.environ['FLASK_KEY']
 
-dedupers = {}
-
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -43,33 +42,27 @@ def index():
     if request.method == 'POST':
         f = request.files['input_file']
         if f and allowed_file(f.filename):
-            deduper_id = str(uuid4())
-            dedupers[deduper_id] = {
+            d = {
+                'step': 1,
+                'deduper_id': str(uuid4()),
                 'csv': f.read(),
                 'filename': secure_filename(str(time.time()) + "_" + f.filename)
             }
+            inp = StringIO(d['csv'])
+            filename = d['filename']
+            reader = csv.reader(inp)
+            fields = reader.next()
+            client = Client(('localhost', 6000))
+            client.send(d)
+            client.close()
             flask_session['session_id'] = deduper_id
+            flask_session['filename'] = filename
+            flask_session['field'] = fields
             return redirect(url_for('select_fields'))
         else:
             error = 'Error uploading file. Did you forget to select one?'
             status_code = 500
     return make_response(render_app_template('index.html', error=error), status_code)
-
-def preProcess(column):
-    column = AsciiDammit.asciiDammit(column)
-    column = re.sub('  +', ' ', column)
-    column = re.sub('\n', ' ', column)
-    column = column.strip().strip('"').strip("'").lower().strip()
-    return column
-
-def readData(f):
-    data = {}
-    reader = csv.DictReader(f)
-    for i, row in enumerate(reader):
-        clean_row = [(k, preProcess(v)) for (k,v) in row.items()]
-        row_id = i
-        data[row_id] = dedupe.core.frozendict(clean_row)
-    return data
 
 @app.route('/select_fields/', methods=['GET', 'POST'])
 def select_fields():
@@ -79,24 +72,19 @@ def select_fields():
         return redirect(url_for('index'))
     else:
         deduper_id = flask_session['session_id']
-        inp = StringIO(dedupers[deduper_id]['csv'])
-        filename = dedupers[deduper_id]['filename']
-        reader = csv.reader(inp)
-        fields = reader.next()
-        inp = StringIO(dedupers[deduper_id]['csv'])
+        fields = flask_session['fields']
+        filename = flask_session['filename']
         if request.method == 'POST':
             field_list = [r for r in request.form]
             if field_list:
-                training = True
-                field_defs = {}
-                for field in field_list:
-                    field_defs[field] = {'type': 'String'}
-                data_d = readData(inp)
-                dedupers[deduper_id]['data_d'] = data_d
-                dedupers[deduper_id]['field_defs'] = copy.deepcopy(field_defs)
-                deduper = dedupe.Dedupe(field_defs)
-                deduper.sample(data_d, 150000)
-                dedupers[deduper_id]['deduper'] = deduper
+                d = {
+                    'step': 2,
+                    'deduper_id': deduper_id,
+                    'field_list': field_list
+                }
+                client = Client(('localhost', 6000))
+                client.send(d)
+                client.close()
                 return redirect(url_for('training_run'))
             else:
                 error = 'You must select at least one field to compare on.'
@@ -108,25 +96,8 @@ def training_run():
     if not flask_session.get('session_id'):
         return redirect(url_for('index'))
     else:
-        deduper_id = flask_session['session_id']
-        deduper = dedupers[deduper_id]['deduper']
-        filename = dedupers[deduper_id]['filename']
-        fields = deduper.data_model.comparison_fields
-        record_pair = deduper.getUncertainPair()[0]
-        dedupers[deduper_id]['current_pair'] = record_pair
-        data = {
-            'fields': fields,
-            'left': {},
-            'right': {},
-        }
-        left, right = record_pair
-        for k,v in left.items():
-            if k in fields:
-                data['left'][k] = v
-        for k,v in right.items():
-            if k in fields:
-                data['right'][k] = v
-        return render_app_template('training_run.html', data=data, fields=fields, filename=filename)
+        filename = flask_session['filename']
+        return render_app_template('training_run.html', filename=filename)
 
 @app.route('/get-pair/')
 def get_pair():
@@ -134,11 +105,12 @@ def get_pair():
         return make_response(jsonify(status='error', message='need to start a session'), 400)
     else:
         deduper_id = flask_session['session_id']
-        deduper = dedupers[deduper_id]['deduper']
-        filename = dedupers[deduper_id]['filename']
-        fields = deduper.data_model.comparison_fields
-        record_pair = deduper.getUncertainPair()[0]
-        dedupers[deduper_id]['current_pair'] = record_pair
+        listener = Listener(('localhost', 6001), authkey=deduper_id)
+        client = Client(('localhost', 6000))
+        client.send({'deduper_id': deduper_id, 'step': 'get_pair'})
+        client.close()
+        record_pair = listener.recv()
+        listener.close()
         data = []
         left, right = record_pair
         for field in fields:
