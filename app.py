@@ -8,19 +8,12 @@ import requests
 import re
 import os
 import copy
-from dedupe import AsciiDammit
-from dedupe.serializer import _to_json, dedupe_decoder
-import dedupe
-from deduper import dedupeit
 from cStringIO import StringIO
 import csv
-from queue import DelayedResult
 from uuid import uuid4
 import collections
-from redis import Redis
-from multiprocessing.connection import Client
-
-redis = Redis()
+from multiprocessing.connection import Client, Listener
+from run_queue import TRAINING_RECV
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'upload_data')
 ALLOWED_EXTENSIONS = set(['csv', 'json'])
@@ -30,6 +23,31 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
 app.config['REDIS_QUEUE_KEY'] = 'deduper'
 app.secret_key = os.environ['FLASK_KEY']
+
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def get_client():
+    while True:
+        try:
+            client = Client(TRAINING_RECV)
+            break
+        except Exception as e:
+            time.sleep(1)
+            continue
+    return client
+
+def send_msg(client, msg):
+    while True:
+        try:
+            client.send(msg)
+            break
+        except IOError as e:
+            client = Client(TRAINING_RECV)
+            time.sleep(1)
+            continue
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -52,12 +70,11 @@ def index():
             filename = d['filename']
             reader = csv.reader(inp)
             fields = reader.next()
-            client = Client(('localhost', 6000))
-            client.send(d)
-            client.close()
-            flask_session['session_id'] = deduper_id
-            flask_session['filename'] = filename
-            flask_session['field'] = fields
+            client = get_client()
+            send_msg(client, d)
+            flask_session['session_id'] = d['deduper_id']
+            flask_session['filename'] = d['filename']
+            flask_session['fields'] = fields
             return redirect(url_for('select_fields'))
         else:
             error = 'Error uploading file. Did you forget to select one?'
@@ -82,9 +99,8 @@ def select_fields():
                     'deduper_id': deduper_id,
                     'field_list': field_list
                 }
-                client = Client(('localhost', 6000))
-                client.send(d)
-                client.close()
+                client = get_client()
+                send_msg(client, d)
                 return redirect(url_for('training_run'))
             else:
                 error = 'You must select at least one field to compare on.'
@@ -105,12 +121,19 @@ def get_pair():
         return make_response(jsonify(status='error', message='need to start a session'), 400)
     else:
         deduper_id = flask_session['session_id']
-        listener = Listener(('localhost', 6001), authkey=deduper_id)
-        client = Client(('localhost', 6000))
-        client.send({'deduper_id': deduper_id, 'step': 'get_pair'})
-        client.close()
-        record_pair = listener.recv()
-        listener.close()
+        for port in range(6002, 6100):
+            try:
+                listener = Listener(('localhost', port), authkey=deduper_id)
+                break
+            except:
+                continue
+        client = get_client()
+        send_msg(client, {'deduper_id': deduper_id, 'step': 'get_pair', 'port': port})
+        try:
+            conn = listener.accept()
+            record_pair, fields = conn.recv()
+        except EOFError:
+            listener.close()
         data = []
         left, right = record_pair
         for field in fields:
@@ -127,60 +150,34 @@ def get_pair():
 @app.route('/mark-pair/')
 def mark_pair():
     if not flask_session.get('session_id'):
-        return make_response(jsonify(status='error', message='need to start a session'), 400)
+        resp = make_response(jsonify(status='error', message='need to start a session'), 400)
     else:
         action = request.args['action']
         deduper_id = flask_session['session_id']
-        current_pair = dedupers[deduper_id]['current_pair']
-        if dedupers[deduper_id].get('counter'):
-            counter = dedupers[deduper_id]['counter']
+        client = get_client()
+        if flask_session.get('counter'):
+            counter = flask_session['counter']
         else:
             counter = {'yes': 0, 'no': 0, 'unsure': 0}
-        if dedupers[deduper_id].get('training_data'):
-            labels = dedupers[deduper_id]['training_data']
-        else:
-            labels = {'distinct' : [], 'match' : []}
-        deduper = dedupers[deduper_id]['deduper']
         if action == 'yes':
-            labels['match'].append(current_pair)
             counter['yes'] += 1
-            resp = {'counter': counter}
+            send_msg(client, {'deduper_id': deduper_id, 'action': 'yes', 'step': 'mark_pair'})
         elif action == 'no':
-            labels['distinct'].append(current_pair)
             counter['no'] += 1
-            resp = {'counter': counter}
+            send_msg(client, {'deduper_id': deduper_id, 'action': 'no', 'step': 'mark_pair'})
         elif action == 'finish':
-            filename = dedupers[deduper_id]['filename']
-            file_path = os.path.join(UPLOAD_FOLDER, filename)
-            with open(file_path, 'wb') as f:
-                f.write(dedupers[deduper_id]['csv'])
-            training_file_path = os.path.join(UPLOAD_FOLDER, '%s-training.json' % filename)
-            training_data = dedupers[deduper_id]['training_data']
-            with open(training_file_path, 'wb') as f:
-                f.write(json.dumps(training_data, default=_to_json))
-            field_defs = dedupers[deduper_id]['field_defs']
-            sample = deduper.data_sample
-            args = {
-                'field_defs': field_defs,
-                'training_data': training_file_path,
-                'file_path': file_path,
-                'data_sample': sample,
-            }
-            rv = dedupeit.delay(**args)
-            flask_session['deduper_key'] = rv.key
-            resp = {'finished': True}
+            for port in range(6002, 6100):
+                try:
+                    flask_session['listener'] = Listener(('localhost', port), authkey=deduper_id)
+                    break
+                except:
+                    continue
+            send_msg(client, {'deduper_id': deduper_id, 'step': 'finish', 'port': port})
         else:
+            send_msg(client, {'deduper_id': deduper_id, 'action': 'unsure', 'step': 'mark_pair'})
             counter['unsure'] += 1
-            dedupers[deduper_id]['counter'] = counter
-            resp = {'counter': counter}
-        deduper.markPairs(labels)
-        dedupers[deduper_id]['training_data'] = labels
-        dedupers[deduper_id]['counter'] = counter
-        if resp.get('finished'):
-            deduper.pool.terminate()
-            del deduper
-            del dedupers[deduper_id]
-    resp = make_response(json.dumps(resp))
+        flask_session['counter'] = counter
+        resp = make_response(json.dumps({'counter': counter}))
     resp.headers['Content-Type'] = 'application/json'
     return resp
 
@@ -194,15 +191,19 @@ def about():
 
 @app.route('/working/')
 def working():
-    key = flask_session.get('deduper_key')
-    if key is None:
+    listener = flask_session['listener']
+    conn = listener.accept()
+    if conn.poll():
+        msg = conn.recv()
+        return jsonify(ready=True, result=msg)
+    else:
         return jsonify(ready=False)
-    rv = DelayedResult(key)
-    if rv.return_value is None:
-        return jsonify(ready=False)
-    redis.delete(key)
-    del flask_session['deduper_key']
-    return jsonify(ready=True, result=rv.return_value)
+   #rv = DelayedResult(key)
+   #if rv.return_value is None:
+   #    return jsonify(ready=False)
+   #redis.delete(key)
+   #del flask_session['deduper_key']
+   #return jsonify(ready=True, result=rv.return_value)
 
 # UTILITY
 def render_app_template(template, **kwargs):
