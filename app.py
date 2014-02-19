@@ -30,13 +30,13 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def get_client():
+def get_client(id=None):
     while True:
         try:
             client = Client(TRAINING_RECV)
             break
         except Exception as e:
-            time.sleep(1)
+            logger.info('get_client: %s, ID: %s' % (str(e), id))
             continue
     return client
 
@@ -45,9 +45,9 @@ def send_msg(client, msg):
         try:
             client.send(msg)
             break
-        except IOError as e:
+        except Exception as e:
+            logger.info('send_msg: %s ID: %s' % (str(e), msg['deduper_id']))
             client = Client(TRAINING_RECV)
-            time.sleep(1)
             continue
 
 def allowed_file(filename):
@@ -71,8 +71,9 @@ def index():
             filename = d['filename']
             reader = csv.reader(inp)
             fields = reader.next()
-            client = get_client()
+            client = get_client(id=d['deduper_id'])
             send_msg(client, d)
+            client.close()
             flask_session['session_id'] = d['deduper_id']
             flask_session['filename'] = d['filename']
             flask_session['fields'] = fields
@@ -100,8 +101,9 @@ def select_fields():
                     'deduper_id': deduper_id,
                     'field_list': field_list
                 }
-                client = get_client()
+                client = get_client(id=d['deduper_id'])
                 send_msg(client, d)
+                client.close()
                 return redirect(url_for('training_run'))
             else:
                 error = 'You must select at least one field to compare on.'
@@ -128,8 +130,9 @@ def get_pair():
                 break
             except:
                 continue
-        client = get_client()
+        client = get_client(id=deduper_id)
         send_msg(client, {'deduper_id': deduper_id, 'step': 'get_pair', 'port': port})
+        client.close()
         try:
             conn = listener.accept()
             record_pair, fields = conn.recv()
@@ -155,7 +158,7 @@ def mark_pair():
     else:
         action = request.args['action']
         deduper_id = flask_session['session_id']
-        client = get_client()
+        client = get_client(id=deduper_id)
         if flask_session.get('counter'):
             counter = flask_session['counter']
         else:
@@ -171,6 +174,7 @@ def mark_pair():
         else:
             send_msg(client, {'deduper_id': deduper_id, 'action': 'unsure', 'step': 'mark_pair'})
             counter['unsure'] += 1
+        client.close()
         flask_session['counter'] = counter
         resp = make_response(json.dumps({'counter': counter}))
     resp.headers['Content-Type'] = 'application/json'
