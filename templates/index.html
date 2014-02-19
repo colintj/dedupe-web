@@ -8,7 +8,7 @@
   <div class='well'>
     <form role="form" action="/" method="post" enctype="multipart/form-data">
         <div class="form-group">
-            <label for="input_file">Spreadsheet (CSV format)</label>
+            <label for="input_file">Upload a spreadsheet to get started ...</label>
             <input type="file" id="input_file" name="input_file">
             <p class="help-block">Only files that are <strong>smaller than 5mb</strong>, please.</p>
         </div>
@@ -18,11 +18,12 @@
   </div>
 </div>
 <div class="col-md-4">
-    <h1>
-        <i class='icon-copy'></i>
-        <i class='icon-long-arrow-right'></i>
-        <i class='icon-file-alt'></i>
-    </h1>
-    <p>Do you have a spreadsheet with a bunch of duplicate data? This is a tool that uses the <a href='https://github.com/datamade/dedupe'>dedupe library</a> to quickly de-duplicate files. <a href='/about/'>Read more &raquo;</a></p>
+    <div class='alert alert-info'>
+        Do you have a spreadsheet with duplicate rows? This is a tool that uses the <a href='https://github.com/datamade/dedupe'>dedupe library</a> to quickly de-duplicate your data. <a href='/about/'>Read more &raquo;</a>
+    </div>
+
+    <div class='alert alert-success'>
+        Want to dedupe some bigger or more complicated data? <a href='mailto:info@datamade.us'>Contact DataMade</a>.
+    </div>
 </div>
 {% endblock %}

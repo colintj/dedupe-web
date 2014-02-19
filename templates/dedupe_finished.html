@@ -1,18 +1,18 @@
 {% extends 'base.html' %}
 {% block content %}
     {% include "dedupe_steps.html" %}
-    <h3>4. Dedupe it!</h3>
+    <h3>4. Deduping ...</h3>
     {% include "error.html" %}
     <div class="col-md-8">
         <div class='well'>
-            <h4>Deduping ...</h4>
-            <p>This may take a few minutes. We are taking what we've learned from your training and applying it to the rest of your dataset.</p>
+            <p>We are taking what we've learned from your training and applying it to the rest of your dataset. <strong>This may take a few minutes.</strong></p>
 
             <p>When finished, your deduplicated data will be available to download below.</p>
-            <hr />
-            <div id='results'>
-                <br />
-            </div>
+        </div>
+        <div id='results'>
+            <br />
+            <br />
+            <br />
         </div>
     </div>
 

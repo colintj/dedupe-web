@@ -15,10 +15,29 @@
             <tbody>
             </tbody>
         </table>
+
+        <h4>Do these two records refer to the same thing?</h4>
+        <p class='pull-left'>
+            <button class="btn btn-success" id="yes">
+                <i class='icon-ok'></i>
+                Yes
+            </button>
+            <button class="btn btn-danger" id="no">
+                <i class='icon-remove'></i>
+                No
+            </button>
+            <button class="btn btn-default" id="unsure">
+                Unsure
+            </button>
+            &nbsp;&nbsp;&nbsp;
+            <button class="btn btn-primary hidden" id="finish">
+                Finished training &raquo;
+            </button>
+        </p>
     </div>
 
     <div class='col-md-4'>
-        <table id='your-training' class='table table-bordered'>
+        <table id='your-training' class='table table-bordered' data-content="Try to label at least 10 'yes' and 10 'no' examples." rel="popover" data-placement="top" data-trigger="hover">
             <tbody>
                 <tr>
                     <td>Yes</td>
@@ -35,29 +54,11 @@
             </tbody>
         </table>
         <div class='alert alert-info'>
-            <p>The more labeled examples you give us, the better the deduplication results will be. Try to provide at least 10 <strong>yes</strong> and 10 <strong>no</strong> responses.</p>
+            <p><i class='icon-info-sign'></i> Here, we use machine learning to <a target='_blank' href='https://github.com/datamade/dedupe/wiki/Making-smart-comparisons'>make smart comparisons</a> about your data. The more labeled examples you give us, the better the deduplication results will be.</p>
         </div>
     </div>
 
     <div class='clearfix'></div>
-    <h4>Do these two records refer to the same thing?</h4>
-    <p class='pull-left'>
-        <button class="btn btn-success" id="yes">
-            <i class='icon-ok'></i>
-            Yes
-        </button>
-        <button class="btn btn-danger" id="no">
-            <i class='icon-remove'></i>
-            No
-        </button>
-        <button class="btn btn-default" id="unsure">
-            Unsure
-        </button>
-        &nbsp;&nbsp;&nbsp;
-        <button class="btn btn-primary hidden" id="finish">
-            Finished training &raquo;
-        </button>
-    </p>
 
     <div class="modal fade" id='finished-modal'>
       <div class="modal-dialog">
@@ -81,6 +82,8 @@
 {% endblock %}
 {% block extra_scripts %}
 <script type="text/javascript">
+
+    $('#your-training').popover();
 
     var training_threshold = 20;
     var modal_shown = false;
