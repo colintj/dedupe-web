@@ -109,13 +109,20 @@ def training_loop(msg, conn):
         for field in field_list:
             field_defs[field] = {'type': 'String'}
         dedupers[deduper_id]['field_defs'] = copy.deepcopy(field_defs)
+<<<<<<< HEAD
         dedupers[deduper_id]['deduper'] = dedupe.Dedupe(field_defs)
+=======
+        dedupers[deduper_id]['deduper'] = dedupe.Dedupe(field_defs, num_processes=8)
+>>>>>>> 41fc6718e385d26ea590c36cbfe4e7352e2139b0
         inp = StringIO(dedupers[deduper_id]['csv'])
         dedupers[deduper_id]['data_d'] = readData(inp)
         dedupers[deduper_id]['deduper'].sample(dedupers[deduper_id]['data_d'], 150000)
     elif msg.get('step') == 'get_pair':
         # Get uncertain pairs
+<<<<<<< HEAD
 
+=======
+>>>>>>> 41fc6718e385d26ea590c36cbfe4e7352e2139b0
         deduper = dedupers[deduper_id]['deduper']
         fields = deduper.data_model.comparison_fields
         record_pair = deduper.uncertainPairs()[0]
@@ -167,7 +174,10 @@ def training_loop(msg, conn):
         writeUniqueResults(raw, deduped_unique_file_path, clustered_dupes)
         deduped_file_path = os.path.join(UPLOAD_FOLDER, '%s-deduped.csv' % deduper_id)
         writeResults(raw, deduped_file_path, clustered_dupes)
+<<<<<<< HEAD
         deduper.pool.terminate()
+=======
+>>>>>>> 41fc6718e385d26ea590c36cbfe4e7352e2139b0
         del deduper
         del dedupers[deduper_id]
     return 'Step %s done: %s' % (msg['step'], msg['deduper_id'])
@@ -180,7 +190,10 @@ if __name__ == "__main__":
             msg = conn.recv()
             training_loop(msg, conn)
         except EOFError:
+<<<<<<< HEAD
             conn.close()
+=======
+>>>>>>> 41fc6718e385d26ea590c36cbfe4e7352e2139b0
             continue
 
     # dedupe_loop(DEDUPE_RECV)
