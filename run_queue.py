@@ -10,6 +10,7 @@ import re
 import logging
 from cStringIO import StringIO
 import csv
+from collections import defaultdict
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -18,8 +19,6 @@ UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'upload_data')
 dedupers = {}
 
 TRAINING_RECV = ('localhost', 6000)
-DEDUPE_RECV = ('localhost', 6200)
-
 
 def preProcess(column):
     column = AsciiDammit.asciiDammit(column)
@@ -44,7 +43,7 @@ def writeResults(inp, file_path, clustered_dupes):
 
     logging.info('saving results to: %s' % file_path)
 
-    cluster_membership = collections.defaultdict(lambda : 'x')
+    cluster_membership = defaultdict(lambda : 'x')
     for cluster_id, cluster in enumerate(clustered_dupes):
         for record_id in cluster:
             cluster_membership[record_id] = cluster_id
@@ -95,35 +94,9 @@ def writeUniqueResults(inp, file_path, clustered_dupes):
         else:
             writer.writerow(row)
 
-def training_loop(msg):
+def training_loop(msg, conn):
     deduper_id = msg.get('deduper_id')
-    if msg.get('step') == 'finish':
-        deduper_id = msg['deduper_id']
-        deduper = dedupers[deduper_id]['deduper']
-        deduper.train()
-        filename = dedupers[deduper_id]['filename']
-        settings_path = os.path.join(UPLOAD_FOLDER, '%s-settings.dedupe' % filename)
-        training_path = os.path.join(UPLOAD_FOLDER, '%s-training.json' % filename)
-        deduper.writeTraining(training_path)
-        deduper.writeSettings(settings_path)
-        threshold = self.deduper.threshold(self.data_d, recall_weight=2)
-        clustered_dupes = self.deduper.match(self.data_d, threshold)
-        logging.info('clustering done')
-        deduped_unique_file_path = os.path.join(UPLOAD_FOLDER, '%s-deduped_unique.csv' % filename)
-        raw = dedupers[deduper_id]['csv']
-        writeUniqueResults(raw, deduped_unique_file_path, clustered_dupes)
-        deduped_file_path = os.path.join(UPLOAD_FOLDER, '%s-deduped.csv' % filename)
-        writeResults(raw, deduped_file_path, clustered_dupes)
-        client = Client(('localhost', msg['port']), authkey=deduper_id)
-        resp = {
-            'training': os.path.relpath(training_path, __file__),
-            'settings': os.path.relpath(settings_path, __file__),
-            'deduped_unique': os.path.relpath(deduped_unique_file_path, __file__),
-            'deduped': os.path.relpath(deduped_file_path, __file__),
-        }
-        client.send(resp)
-        client.close()
-    elif msg.get('step') is 1:
+    if msg.get('step') is 1:
         # Establish the key and save the CSV
         dedupers[deduper_id] = {
             'csv': msg['csv'],
@@ -141,9 +114,10 @@ def training_loop(msg):
         dedupers[deduper_id]['data_d'] = readData(inp)
         dedupers[deduper_id]['deduper'].sample(dedupers[deduper_id]['data_d'], 150000)
     elif msg.get('step') == 'get_pair':
+        # Get uncertain pairs
         deduper = dedupers[deduper_id]['deduper']
         fields = deduper.data_model.comparison_fields
-        record_pair = deduper.getUncertainPair()[0]
+        record_pair = deduper.uncertainPairs()[0]
         dedupers[deduper_id]['current_pair'] = record_pair
         client = Client(('localhost', msg['port']), authkey=deduper_id)
         client.send((record_pair, fields))
@@ -175,15 +149,33 @@ def training_loop(msg):
         deduper.markPairs(labels)
         dedupers[deduper_id]['training_data'] = labels
         dedupers[deduper_id]['counter'] = counter
+    elif msg.get('step') == 'finish':
+        deduper = dedupers[deduper_id]['deduper']
+        deduper.train()
+        filename = dedupers[deduper_id]['filename']
+        settings_path = os.path.join(UPLOAD_FOLDER, '%s-settings.dedupe' % deduper_id)
+        training_path = os.path.join(UPLOAD_FOLDER, '%s-training.json' % deduper_id)
+        deduper.writeTraining(training_path)
+        deduper.writeSettings(settings_path)
+        data_d = dedupers[deduper_id]['data_d']
+        threshold = deduper.threshold(data_d, recall_weight=2)
+        clustered_dupes = deduper.match(data_d, threshold)
+        logging.info('clustering done')
+        deduped_unique_file_path = os.path.join(UPLOAD_FOLDER, '%s-deduped_unique.csv' % deduper_id)
+        raw = dedupers[deduper_id]['csv']
+        writeUniqueResults(raw, deduped_unique_file_path, clustered_dupes)
+        deduped_file_path = os.path.join(UPLOAD_FOLDER, '%s-deduped.csv' % deduper_id)
+        writeResults(raw, deduped_file_path, clustered_dupes)
+        del dedupers[deduper_id]
     return 'Step %s done: %s' % (msg['step'], msg['deduper_id'])
 
 if __name__ == "__main__":
-    training_listener = Listener(TRAINING_RECV)
+    listener = Listener(TRAINING_RECV)
     while True:
-        training_conn = training_listener.accept()
+        conn = listener.accept()
         try:
-            msg = training_conn.recv()
-            training_loop(msg)
+            msg = conn.recv()
+            training_loop(msg, conn)
         except EOFError:
             continue
 

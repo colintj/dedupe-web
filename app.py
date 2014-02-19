@@ -29,6 +29,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def get_client():
     while True:
         try:
@@ -166,13 +167,7 @@ def mark_pair():
             counter['no'] += 1
             send_msg(client, {'deduper_id': deduper_id, 'action': 'no', 'step': 'mark_pair'})
         elif action == 'finish':
-            for port in range(6002, 6100):
-                try:
-                    flask_session['listener'] = Listener(('localhost', port), authkey=deduper_id)
-                    break
-                except:
-                    continue
-            send_msg(client, {'deduper_id': deduper_id, 'step': 'finish', 'port': port})
+            send_msg(client, {'deduper_id': deduper_id, 'step': 'finish'})
         else:
             send_msg(client, {'deduper_id': deduper_id, 'action': 'unsure', 'step': 'mark_pair'})
             counter['unsure'] += 1
@@ -191,19 +186,23 @@ def about():
 
 @app.route('/working/')
 def working():
-    listener = flask_session['listener']
-    conn = listener.accept()
-    if conn.poll():
-        msg = conn.recv()
+    deduper_id = flask_session['session_id']
+    files = [t for t in os.listdir(UPLOAD_FOLDER) if t.startswith(deduper_id)]
+    if len(files) is 4:
+        deduped = os.path.join(UPLOAD_FOLDER, 
+            [f for f in files if f.endswith('deduped.csv')][0])
+        deduped_unique = os.path.join(UPLOAD_FOLDER, 
+            [f for f in files if f.endswith('deduped_unique.csv')][0])
+        training = os.path.join(UPLOAD_FOLDER, 
+            [f for f in files if f.endswith('training.json')][0])
+        msg = {
+            'deduped': os.path.relpath(deduped, __file__),
+            'deduped_unique': os.path.relpath(deduped_unique, __file__),
+            'training': os.path.relpath(training, __file__),
+        }
         return jsonify(ready=True, result=msg)
     else:
         return jsonify(ready=False)
-   #rv = DelayedResult(key)
-   #if rv.return_value is None:
-   #    return jsonify(ready=False)
-   #redis.delete(key)
-   #del flask_session['deduper_key']
-   #return jsonify(ready=True, result=rv.return_value)
 
 # UTILITY
 def render_app_template(template, **kwargs):
