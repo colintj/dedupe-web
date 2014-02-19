@@ -166,6 +166,7 @@ def training_loop(msg, conn):
         writeUniqueResults(raw, deduped_unique_file_path, clustered_dupes)
         deduped_file_path = os.path.join(UPLOAD_FOLDER, '%s-deduped.csv' % deduper_id)
         writeResults(raw, deduped_file_path, clustered_dupes)
+        del deduper
         del dedupers[deduper_id]
     return 'Step %s done: %s' % (msg['step'], msg['deduper_id'])
 
