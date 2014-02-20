@@ -25,10 +25,9 @@
 
   <body>
 
-    <div class="container">
-
-      <!-- Static navbar -->
-      <div class="navbar navbar-default" role="navigation">
+    <!-- Static navbar -->
+    <div class="navbar navbar-default navbar-fixed-top">
+      <div class="container">
         <div class="navbar-header">
           <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
             <span class="sr-only">Toggle navigation</span>
@@ -40,16 +39,19 @@
             <i class='icon-copy'></i>
             <i class='icon-long-arrow-right'></i>
             <i class='icon-file-alt'></i>
-            Spreadsheet Deduper
+            Spreadsheet Deduper by DataMade
           </a>
         </div>
         <div class="navbar-collapse collapse">
           <ul class="nav navbar-nav navbar-right">
-            <li><a href="/">Home</a></li>
             <li><a href="/about/">About</a></li>
+            <li><a href="mailto:info@datamade.us">Contact us</a></li>
           </ul>
         </div><!--/.nav-collapse -->
       </div>
+    </div>
+
+    <div class="container">
 
       {% block content %}
       {% endblock %}
@@ -58,7 +60,7 @@
       <div class='clearfix'></div>
 
       <div class="footer">
-        <p class='pull-right'>Questions? <a href='mailto:info@datamade.us'>Email us!</a> | &copy; <a href='http://datamade.us'>DataMade</a></p>
+        <p class='pull-right'><a href='mailto:info@datamade.us'>Contact us</a> | &copy; <a href='http://datamade.us'>DataMade</a></p>
       </div>
     </div> <!-- /container -->
 

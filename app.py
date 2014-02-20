@@ -26,7 +26,7 @@ ALLOWED_EXTENSIONS = set(['csv', 'json'])
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
 app.config['REDIS_QUEUE_KEY'] = 'deduper'
 app.secret_key = os.environ['FLASK_KEY']
 
@@ -137,7 +137,7 @@ def get_pair():
         deduper = dedupers[deduper_id]['deduper']
         filename = dedupers[deduper_id]['filename']
         fields = deduper.data_model.comparison_fields
-        record_pair = deduper.getUncertainPair()[0]
+        record_pair = deduper.uncertainPairs()[0]
         dedupers[deduper_id]['current_pair'] = record_pair
         data = []
         left, right = record_pair
