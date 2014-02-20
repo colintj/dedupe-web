@@ -17,21 +17,22 @@ class WebDeduper(object):
     
     def __init__(self, deduper,
             file_path=None, 
-            training_data=None, 
-            destroy_dupes=True):
-        self.destroy_dupes = destroy_dupes
+            training_data=None,
+            recall_weight=2):
         self.file_path = file_path
-        self.data_d = self.readData()
+        self.data_d = readData(self.file_path)
         self.deduper = deduper
-        self.deduper.readTraining(training_data)
-        self.deduper.train()
-        self.settings_path = '%s-settings.dedupe' % file_path
+        self.recall_weight = recall_weight
         self.training_data = training_data
-        self.deduper.writeTraining(self.training_data)
-        self.deduper.writeSettings(self.settings_path)
+        if training_data:
+            self.deduper.readTraining(self.training_data)
+            self.deduper.train()
+            self.settings_path = '%s-settings.dedupe' % file_path
+            self.deduper.writeTraining(self.training_data)
+            self.deduper.writeSettings(self.settings_path)
 
     def dedupe(self):
-        threshold = self.deduper.threshold(self.data_d, recall_weight=2)
+        threshold = self.deduper.threshold(self.data_d, recall_weight=self.recall_weight)
         clustered_dupes = self.deduper.match(self.data_d, threshold)
         logging.info('clustering done')
         self.deduped_file_path = '%s-deduped.csv' % self.file_path
@@ -39,20 +40,16 @@ class WebDeduper(object):
         self.writeUniqueResults(clustered_dupes)
         self.writeResults(clustered_dupes)
         files = {
-            'original': os.path.relpath(self.file_path, __file__),
-            'training': os.path.relpath(self.training_data, __file__),
-            'settings': os.path.relpath(self.settings_path, __file__),
             'deduped': os.path.relpath(self.deduped_file_path, __file__),
             'deduped_unique': os.path.relpath(self.deduped_unique_file_path, __file__),
         }
+        if self.training_data:
+            files['training'] = os.path.relpath(self.training_data, __file__)
+            files['settings'] = os.path.relpath(self.settings_path, __file__)
         logging.info(files)
         return files
     
-    # ## Writing results
     def writeResults(self, clustered_dupes):
- 
-        # Write our original data back out to a CSV with a new column called 
-        # 'Cluster ID' which indicates which records refer to each other.
  
         cluster_membership = defaultdict(lambda : 'x')
         for cluster_id, cluster in enumerate(clustered_dupes):
@@ -60,7 +57,7 @@ class WebDeduper(object):
                 cluster_membership[record_id] = cluster_id
  
         writer = csv.writer(open(self.deduped_file_path, 'wb'))
-
+ 
         reader = csv.reader(open(self.file_path, 'rb'))
  
         heading_row = reader.next()
@@ -73,11 +70,7 @@ class WebDeduper(object):
             row.insert(0, cluster_id)
             writer.writerow(row)
  
-    # ## Writing results
-    def writeUniqueResults(self, clustered_dupes):
- 
-        # Write our original data back out to a CSV with a new column called 
-        # 'Cluster ID' which indicates which records refer to each other.
+    def writeUniqueResults(clustered_dupes):
  
         cluster_membership = {}
         for (cluster_id, cluster) in enumerate(clustered_dupes):
@@ -102,20 +95,20 @@ class WebDeduper(object):
                     seen_clusters.add(cluster_id)
             else:
                 writer.writerow(row)
-
+ 
     def preProcess(self, column):
         column = AsciiDammit.asciiDammit(column)
         column = re.sub('  +', ' ', column)
         column = re.sub('\n', ' ', column)
         column = column.strip().strip('"').strip("'").lower().strip()
         return column
-
+ 
     def readData(self):
         data = {}
         f = open(self.file_path, 'rU')
         reader = csv.DictReader(f)
         for i, row in enumerate(reader):
-            clean_row = [(k, self.preProcess(v)) for (k,v) in row.items()]
+            clean_row = [(k, preProcess(v)) for (k,v) in row.items()]
             row_id = i
             data[row_id] = dedupe.core.frozendict(clean_row)
         return data
@@ -131,16 +124,13 @@ def dedupeit(**kwargs):
     del d
     return files
 
-if __name__ == '__main__':
-    import argparse
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultHelpFormatter
-    )
-    parser.add_argument('--session_id', type=int,
-        help='Database row id for session')
-    args = parser.parse_args()
-    engine = create_engine('sqlite:///deduper.db')
-    Session = sessionmaker(bind=engine)
-    sql_session = Session()
-    deduper = WebDeduper(args, sql_session)
-    deduper.dedupe()
+@queuefunc
+def static_dedupeit(**kwargs):
+    d = dedupe.StaticDedupe(kwargs['settings_path'])
+    deduper = WebDeduper(d, 
+        file_path=kwargs['file_path'],
+        recall_weight=kwargs['recall_weight'])
+    files = deduper.dedupe()
+    d.pool.terminate()
+    del d
+    return files

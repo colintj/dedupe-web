@@ -11,7 +11,7 @@ import copy
 from dedupe import AsciiDammit
 from dedupe.serializer import _to_json, dedupe_decoder
 import dedupe
-from deduper import dedupeit
+from deduper import dedupeit, static_dedupeit
 from cStringIO import StringIO
 import csv
 from queue import DelayedResult
@@ -215,6 +215,41 @@ def mark_pair():
 @app.route('/dedupe_finished/')
 def dedupe_finished():
   return render_app_template("dedupe_finished.html")
+
+@app.route('/trained_dedupe/', methods=['POST'])
+def trained_dedupe():
+    deduper_id = flask_session['session_id']
+    inp = StringIO(dedupers[deduper_id]['csv'])
+    filename = dedupers[deduper_id]['filename']
+    field_defs = dedupers[deduper_id]['field_defs']
+    training_data = request.files['training_data']
+    training_file_path = os.path.join(UPLOAD_FOLDER, '%s-training.json' % filename)
+    with open(training_file_path, 'wb') as f:
+        f.write(json.dumps(training_data, default=_to_json))
+    return redirect(url_for('dedupe_finished'))
+
+@app.route('/adjust_threshold/')
+def adjust_threshold():
+    deduper_id = flask_session['session_id']
+    filename = dedupers[deduper_id]['filename']
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
+    start = filename.split('_')[0]
+    settings_path = None
+    for f in os.listdir(UPLOAD_FOLDER):
+        if f.startswith(start) and f.endswith('.dedupe'):
+            settings_path = os.path.join(UPLOAD_FOLDER, f)
+            break
+    recall_weight = request.args.get('recall_weight')
+    args = {
+        'settings_path': settings_path,
+        'file_path': file_path,
+        'recall_weight': recall_weight,
+    }
+    rv = static_dedupeit.delay(**args)
+    flask_session['deduper_key'] = rv.key
+    resp = make_response(json.dumps({'adjusted': True}))
+    resp.headers['Content-Type'] = 'application/json'
+    return resp
 
 @app.route('/about/')
 def about():
