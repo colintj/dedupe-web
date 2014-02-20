@@ -112,7 +112,7 @@ def training_run():
         deduper = dedupers[deduper_id]['deduper']
         filename = dedupers[deduper_id]['filename']
         fields = deduper.data_model.comparison_fields
-        record_pair = deduper.getUncertainPair()[0]
+        record_pair = deduper.uncertainPairs()[0]
         dedupers[deduper_id]['current_pair'] = record_pair
         data = {
             'fields': fields,
