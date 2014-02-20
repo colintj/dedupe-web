@@ -123,7 +123,6 @@ class WebDeduper(object):
 @queuefunc
 def dedupeit(**kwargs):
     d = dedupe.Dedupe(kwargs['field_defs'], kwargs['data_sample'])
-    logger.info(d.pool)
     deduper = WebDeduper(d, 
         file_path=kwargs['file_path'],
         training_data=kwargs['training_data'])

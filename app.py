@@ -232,6 +232,10 @@ def working():
     del flask_session['deduper_key']
     return jsonify(ready=True, result=rv.return_value)
 
+@app.route('/upload_data/<path:filename>/')
+def upload_data(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
 # UTILITY
 def render_app_template(template, **kwargs):
     '''Add some goodies to all templates.'''
