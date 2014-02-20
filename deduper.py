@@ -35,15 +35,15 @@ class WebDeduper(object):
         clustered_dupes = self.deduper.match(self.data_d, threshold)
         logging.info('clustering done')
         self.deduped_file_path = '%s-deduped.csv' % self.file_path
-        if self.destroy_dupes:
-            self.writeUniqueResults(clustered_dupes)
-        else:
-            self.writeResults(clustered_dupes)
+        self.deduped_unique_file_path = '%s-deduped_unique.csv' % self.file_path
+        self.writeUniqueResults(clustered_dupes)
+        self.writeResults(clustered_dupes)
         files = {
             'original': os.path.relpath(self.file_path, __file__),
             'training': os.path.relpath(self.training_data, __file__),
             'settings': os.path.relpath(self.settings_path, __file__),
             'deduped': os.path.relpath(self.deduped_file_path, __file__),
+            'deduped_unique': os.path.relpath(self.deduped_unique_file_path, __file__),
         }
         logging.info(files)
         return files
@@ -54,9 +54,7 @@ class WebDeduper(object):
         # Write our original data back out to a CSV with a new column called 
         # 'Cluster ID' which indicates which records refer to each other.
  
-        logging.info('saving results to: %s' % self.deduped_file_path)
- 
-        cluster_membership = collections.defaultdict(lambda : 'x')
+        cluster_membership = defaultdict(lambda : 'x')
         for cluster_id, cluster in enumerate(clustered_dupes):
             for record_id in cluster:
                 cluster_membership[record_id] = cluster_id
@@ -81,15 +79,13 @@ class WebDeduper(object):
         # Write our original data back out to a CSV with a new column called 
         # 'Cluster ID' which indicates which records refer to each other.
  
-        logging.info('saving unique results to: %s' % self.deduped_file_path)
- 
         cluster_membership = {}
         for (cluster_id, cluster) in enumerate(clustered_dupes):
             logging.info(cluster)
             for record_id in cluster:
                 cluster_membership[record_id] = cluster_id
  
-        writer = csv.writer(open(self.deduped_file_path, 'wb'))
+        writer = csv.writer(open(self.deduped_unique_file_path, 'wb'))
  
         reader = csv.reader(open(self.file_path, 'rb'))
  
@@ -127,6 +123,7 @@ class WebDeduper(object):
 @queuefunc
 def dedupeit(**kwargs):
     d = dedupe.Dedupe(kwargs['field_defs'], kwargs['data_sample'])
+    logger.info(d.pool)
     deduper = WebDeduper(d, 
         file_path=kwargs['file_path'],
         training_data=kwargs['training_data'])
