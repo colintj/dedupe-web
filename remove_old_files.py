@@ -3,7 +3,7 @@ import time
 
 def remove_oldies(folder):
     now = time.time()
-    then = now - 60
+    then = now - (60 * 60)
     for f in os.listdir(folder):
         ts = f.split('_')[0]
         try:
