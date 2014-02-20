@@ -6,6 +6,7 @@
     <h3>About</h3>
     <ol>
       <li><a href='#what-is-this'>What is this?</a></li>
+      <li><a href='#limitations'>Limitations</a></li>
       <li><a href='#code'>Code</a></li>
       <li><a href='#team-and-credits'>Team and credits</a></li>
       <li><a href='#contact-us'>Contact us</a></li>
@@ -13,7 +14,19 @@
   </div>
 </div>
 <div class="col-md-9">
-  <p>Spreadsheet Deduper is an online tool for finding and removing duplicates from a spreadsheet. It uses the <a href='https://github.com/open-city/dedupe'>dedupe entity resolution library</a> to quickly and accurately identify duplicate rows based on training data that you give it.</p>
+  <h3 id='what-is-this'>What is this?</h3>
+  <p><strong>Spreadsheet Deduper</strong> is a tool for identifying and removing duplicates from a spreadsheet. It uses the <a href='https://github.com/datamade/dedupe'>dedupe library</a> to quickly and accurately identify duplicate rows based on training data that you give it.</p>
+
+  <h3 id='limitations'>Limitations</h3>
+  <p>De-duplication takes a lot of computing power, which increases as your data gets bigger. To keep things manageable on the web, we limit the size of your file to <strong>5mb</strong>.</p>
+
+  <p>If you have a large, complicated or sensitive dataset you need de-duplicated, you can:</p>
+
+  <ul>
+    <li>download and install the <a href='https://github.com/datamade/dedupe'>dedupe library</a></li>
+    <li><a href='mailto:info@datamade.us'>hire DataMade</a> to set up and run a custom deployment of dedupe</li>
+  </ul>
+    </p>
 
   <h3 id='code'>Code</h3>
 
@@ -22,7 +35,7 @@
   <p>Technologies used:</p>
 
   <ul>
-      <li><a href='https://github.com/open-city/dedupe'>Dedupe</a> - open source entity resolution library</li>
+      <li><a href='https://github.com/datamade/dedupe'>Dedupe</a> - open source entity resolution library</li>
       <li><a href='https://www.djangoproject.com/'>Flask</a> - web framework</li>
       <li><a href='http://getbootstrap.com'>Bootstrap</a> - HTML/CSS layout</li>
   </ul>
@@ -36,7 +49,7 @@
     <li>Eric van Zanten</li>
   </ul>
 
-  <p>This tool is an extension of <a href='https://github.com/datamade/csvdedupe'>csvdedupe</a>, a command line deduplication tool we developed under an <a href='https://source.opennews.org/en-US/articles/introducing-cvsdedupe/'>OpenNews code sprint</a> run by the <a href='http://opennews.org/'>Knight-Mozilla OpenNews partnership</a>.</p>
+  <p>This tool is an extension of <a href='https://github.com/datamade/csvdedupe'>csvdedupe</a>, a command line de-duplication tool we developed under an <a href='https://source.opennews.org/en-US/articles/introducing-cvsdedupe/'>OpenNews code sprint</a> run by the <a href='http://opennews.org/'>Knight-Mozilla OpenNews partnership</a>.</p>
 
   <h3 id='contact-us'>Contact us</h3>
 
@@ -46,7 +59,7 @@
   </p>
 
   <p>
-    Notice a bug or want to contribute to this project? <a href='https://github.com/datamade/dedupe-web'>Get involved on Github</a>.
+    Notice a bug or want to contribute to this project? <a href='https://github.com/datamade/dedupe-web'>Get involved on Github</a> or join our <a href='https://groups.google.com/forum/?fromgroups=#!forum/open-source-deduplication'>Google group</a>.
   </p>
 </div>
 

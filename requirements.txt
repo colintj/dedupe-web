@@ -10,4 +10,4 @@ redis
 # ====================
 # Dedupe
 # ====================
-# git+git://github.com/open-city/dedupe.git#egg=dedupe
+# git+git://github.com/datamade/dedupe.git#egg=dedupe
