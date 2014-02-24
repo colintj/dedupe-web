@@ -34,12 +34,33 @@
                 <i class='icon-download'></i>\
                 Download your file with duplicates removed\
             </a><br /><br />\
-            <a class='btn btn-default' href='/" + data.result.training + "'>\
-                <i class='icon-download'></i>\
-                Download your training\
-            </a>\
+            </p>\
+            <p>\
+                <form role='form'>\
+                    <label for='recall_weight'>Adjust Recall Weight:</label>\
+                    <select id='recall_weight'>\
+                        <option val='0'>0</option>\
+                        <option val='0.25'>0.25</option>\
+                        <option val='0.5'>0.5</option>\
+                        <option val='0.75'>0.75</option>\
+                        <option val='1'>1</option>\
+                        <option val='1.5'>1.5</option>\
+                        <option val='2' selected=true>2</option>\
+                        <option val='4'>4</option>\
+                        <option val='6'>6</option>\
+                        <option val='8'>8</option>\
+                    </select>\
+                    <button id='adjust_threshold'>Resubmit</button>\
+                </form>\
             </p>";
-        $('#results').append(template);
+        $('#results').html(template);
+        $('#adjust_threshold').on('click', function(e){
+            e.preventDefault();
+            var weight = $('#recall_weight').val();
+            $.getJSON('/adjust_threshold/', {recall_weight: weight}, function(resp){
+                poll_worker();
+            });
+        })
     }
 
     function poll_worker(){

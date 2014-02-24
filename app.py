@@ -207,7 +207,6 @@ def mark_pair():
         if resp.get('finished'):
             deduper.pool.terminate()
             del deduper
-            del dedupers[deduper_id]
     resp = make_response(json.dumps(resp))
     resp.headers['Content-Type'] = 'application/json'
     return resp
@@ -238,7 +237,6 @@ def adjust_threshold():
     for f in os.listdir(UPLOAD_FOLDER):
         if f.startswith(start) and f.endswith('.dedupe'):
             settings_path = os.path.join(UPLOAD_FOLDER, f)
-            break
     recall_weight = request.args.get('recall_weight')
     args = {
         'settings_path': settings_path,

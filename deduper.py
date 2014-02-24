@@ -20,7 +20,7 @@ class WebDeduper(object):
             training_data=None,
             recall_weight=2):
         self.file_path = file_path
-        self.data_d = readData(self.file_path)
+        self.data_d = self.readData()
         self.deduper = deduper
         self.recall_weight = recall_weight
         self.training_data = training_data
@@ -32,6 +32,7 @@ class WebDeduper(object):
             self.deduper.writeSettings(self.settings_path)
 
     def dedupe(self):
+        logger.info('### Dedupe started')
         threshold = self.deduper.threshold(self.data_d, recall_weight=self.recall_weight)
         clustered_dupes = self.deduper.match(self.data_d, threshold)
         logging.info('clustering done')
@@ -70,7 +71,7 @@ class WebDeduper(object):
             row.insert(0, cluster_id)
             writer.writerow(row)
  
-    def writeUniqueResults(clustered_dupes):
+    def writeUniqueResults(self, clustered_dupes):
  
         cluster_membership = {}
         for (cluster_id, cluster) in enumerate(clustered_dupes):
@@ -108,7 +109,7 @@ class WebDeduper(object):
         f = open(self.file_path, 'rU')
         reader = csv.DictReader(f)
         for i, row in enumerate(reader):
-            clean_row = [(k, preProcess(v)) for (k,v) in row.items()]
+            clean_row = [(k, self.preProcess(v)) for (k,v) in row.items()]
             row_id = i
             data[row_id] = dedupe.core.frozendict(clean_row)
         return data
