@@ -9,6 +9,7 @@ from collections import defaultdict
 import logging
 from datetime import datetime
 from queue import queuefunc
+import pdb
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -35,7 +36,7 @@ class WebDeduper(object):
         logger.info('### Dedupe started')
         threshold = self.deduper.threshold(self.data_d, recall_weight=self.recall_weight)
         clustered_dupes = self.deduper.match(self.data_d, threshold)
-        logging.info('clustering done')
+        logger.info('clustering done')
         self.deduped_file_path = '%s-deduped.csv' % self.file_path
         self.deduped_unique_file_path = '%s-deduped_unique.csv' % self.file_path
         self.writeUniqueResults(clustered_dupes)
@@ -47,7 +48,7 @@ class WebDeduper(object):
         if self.training_data:
             files['training'] = os.path.relpath(self.training_data, __file__)
             files['settings'] = os.path.relpath(self.settings_path, __file__)
-        logging.info(files)
+        logger.info(files)
         return files
     
     def writeResults(self, clustered_dupes):

@@ -222,9 +222,7 @@ def trained_dedupe():
     filename = dedupers[deduper_id]['filename']
     field_defs = dedupers[deduper_id]['field_defs']
     training_data = request.files['training_data']
-    training_file_path = os.path.join(UPLOAD_FOLDER, '%s-training.json' % filename)
-    with open(training_file_path, 'wb') as f:
-        f.write(json.dumps(training_data, default=_to_json))
+    dedupers[deduper_id]['training_data'] = json.load(training_data)
     return redirect(url_for('dedupe_finished'))
 
 @app.route('/adjust_threshold/')
