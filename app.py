@@ -46,9 +46,9 @@ def index():
             deduper_id = str(uuid4())
             dedupers[deduper_id] = {
                 'csv': f.read(),
-                'filename': secure_filename(str(time.time()) + "_" + f.filename)
             }
             flask_session['session_id'] = deduper_id
+            flask_session['filename'] = secure_filename(str(time.time()) + "_" + f.filename)
             return redirect(url_for('select_fields'))
         else:
             error = 'Error uploading file. Did you forget to select one?'
@@ -80,7 +80,7 @@ def select_fields():
     else:
         deduper_id = flask_session['session_id']
         inp = StringIO(dedupers[deduper_id]['csv'])
-        filename = dedupers[deduper_id]['filename']
+        filename = flask_session['filename']
         reader = csv.reader(inp)
         fields = reader.next()
         inp = StringIO(dedupers[deduper_id]['csv'])
@@ -110,7 +110,7 @@ def training_run():
     else:
         deduper_id = flask_session['session_id']
         deduper = dedupers[deduper_id]['deduper']
-        filename = dedupers[deduper_id]['filename']
+        filename = flask_session['filename']
         fields = deduper.data_model.comparison_fields
         record_pair = deduper.uncertainPairs()[0]
         dedupers[deduper_id]['current_pair'] = record_pair
@@ -135,7 +135,7 @@ def get_pair():
     else:
         deduper_id = flask_session['session_id']
         deduper = dedupers[deduper_id]['deduper']
-        filename = dedupers[deduper_id]['filename']
+        filename = flask_session['filename']
         fields = deduper.data_model.comparison_fields
         record_pair = deduper.uncertainPairs()[0]
         dedupers[deduper_id]['current_pair'] = record_pair
@@ -178,7 +178,7 @@ def mark_pair():
             counter['no'] += 1
             resp = {'counter': counter}
         elif action == 'finish':
-            filename = dedupers[deduper_id]['filename']
+            filename = flask_session['filename']
             file_path = os.path.join(UPLOAD_FOLDER, filename)
             with open(file_path, 'wb') as f:
                 f.write(dedupers[deduper_id]['csv'])
@@ -206,7 +206,7 @@ def mark_pair():
         dedupers[deduper_id]['counter'] = counter
         if resp.get('finished'):
             deduper.pool.terminate()
-            del deduper
+            del dedupers[deduper_id]
     resp = make_response(json.dumps(resp))
     resp.headers['Content-Type'] = 'application/json'
     return resp
@@ -219,7 +219,7 @@ def dedupe_finished():
 def trained_dedupe():
     deduper_id = flask_session['session_id']
     inp = StringIO(dedupers[deduper_id]['csv'])
-    filename = dedupers[deduper_id]['filename']
+    filename = flask_session['filename']
     field_defs = dedupers[deduper_id]['field_defs']
     training_data = request.files['training_data']
     dedupers[deduper_id]['training_data'] = json.load(training_data)
@@ -228,7 +228,7 @@ def trained_dedupe():
 @app.route('/adjust_threshold/')
 def adjust_threshold():
     deduper_id = flask_session['session_id']
-    filename = dedupers[deduper_id]['filename']
+    filename = flask_session['filename']
     file_path = os.path.join(UPLOAD_FOLDER, filename)
     start = filename.split('_')[0]
     settings_path = None
