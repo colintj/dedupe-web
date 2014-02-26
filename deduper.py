@@ -23,7 +23,7 @@ class WebDeduper(object):
         self.file_path = file_path
         self.data_d = self.readData()
         self.deduper = deduper
-        self.recall_weight = recall_weight
+        self.recall_weight = float(recall_weight)
         self.training_data = training_data
         if training_data:
             self.deduper.readTraining(self.training_data)
@@ -35,8 +35,8 @@ class WebDeduper(object):
     def dedupe(self):
         logger.info('### Dedupe started')
         threshold = self.deduper.threshold(self.data_d, recall_weight=self.recall_weight)
-        clustered_dupes = self.deduper.match(self.data_d, threshold)
         logger.info('clustering done')
+        clustered_dupes = self.deduper.match(self.data_d, threshold)
         self.deduped_file_path = '%s-deduped.csv' % self.file_path
         self.deduped_unique_file_path = '%s-deduped_unique.csv' % self.file_path
         self.writeUniqueResults(clustered_dupes)

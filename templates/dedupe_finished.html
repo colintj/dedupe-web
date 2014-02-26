@@ -57,6 +57,8 @@
         $('#adjust_threshold').on('click', function(e){
             e.preventDefault();
             var weight = $('#recall_weight').val();
+            $('#results').empty();
+            $('#results').spin({'left': 0});
             $.getJSON('/adjust_threshold/', {recall_weight: weight}, function(resp){
                 poll_worker();
             });
