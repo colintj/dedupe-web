@@ -10,6 +10,7 @@ import logging
 from datetime import datetime
 from queue import queuefunc
 import pdb
+from operator import itemgetter
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -53,24 +54,29 @@ class WebDeduper(object):
     
     def writeResults(self, clustered_dupes):
  
-        cluster_membership = defaultdict(lambda : 'x')
+        cluster_membership = {}
         for cluster_id, cluster in enumerate(clustered_dupes):
             for record_id in cluster:
                 cluster_membership[record_id] = cluster_id
+
+        unique_record_id = cluster_id + 1
  
         writer = csv.writer(open(self.deduped_file_path, 'wb'))
  
         reader = csv.reader(open(self.file_path, 'rb'))
  
         heading_row = reader.next()
-        heading_row.insert(0, 'Cluster ID')
+        heading_row.insert(0, 'Group ID')
         writer.writerow(heading_row)
     
         rows = []
 
-        for i, row in enumerate(reader):
-            row_id = i
-            cluster_id = cluster_membership[row_id]
+        for row_id, row in enumerate(reader):
+            if row_id in cluster_membership:
+                cluster_id = cluster_membership[row_id]
+            else:
+                cluster_id = unique_record_id
+                unique_record_id += 1
             row.insert(0, cluster_id)
             rows.append(row)
         rows = sorted(rows, key=itemgetter(0))
