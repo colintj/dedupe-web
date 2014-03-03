@@ -65,12 +65,16 @@ class WebDeduper(object):
         heading_row = reader.next()
         heading_row.insert(0, 'Cluster ID')
         writer.writerow(heading_row)
- 
+    
+        rows = []
+
         for i, row in enumerate(reader):
             row_id = i
             cluster_id = cluster_membership[row_id]
             row.insert(0, cluster_id)
-            writer.writerow(row)
+            rows.append(row)
+        rows = sorted(rows, key=itemgetter(0))
+        writer.writerows(rows)
  
     def writeUniqueResults(self, clustered_dupes):
  
