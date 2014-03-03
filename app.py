@@ -2,7 +2,7 @@ from flask import Flask, request, make_response, render_template, \
     session as flask_session, redirect, url_for, send_from_directory, jsonify
 from werkzeug import secure_filename
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import requests
 import re
@@ -46,7 +46,14 @@ def index():
             deduper_id = str(uuid4())
             dedupers[deduper_id] = {
                 'csv': f.read(),
+                'filename': secure_filename(str(time.time()) + "_" + f.filename),
+                'last_interaction': datetime.now()
             }
+            for key, deduper in dedupers.items():
+                last_interaction = deduper['last_interaction']
+                old = datetime.now() - timedelta(seconds=60 * 15)
+                if last_interaction < old:
+                    del dedupers[key]
             flask_session['session_id'] = deduper_id
             flask_session['filename'] = secure_filename(str(time.time()) + "_" + f.filename)
             return redirect(url_for('select_fields'))
@@ -94,6 +101,7 @@ def select_fields():
                 data_d = readData(inp)
                 dedupers[deduper_id]['data_d'] = data_d
                 dedupers[deduper_id]['field_defs'] = copy.deepcopy(field_defs)
+                dedupers[deduper_id]['last_interaction'] = datetime.now()
                 deduper = dedupe.Dedupe(field_defs)
                 deduper.sample(data_d, 150000)
                 dedupers[deduper_id]['deduper'] = deduper
@@ -111,6 +119,7 @@ def training_run():
         deduper_id = flask_session['session_id']
         deduper = dedupers[deduper_id]['deduper']
         filename = flask_session['filename']
+        dedupers[deduper_id]['last_interaction'] = datetime.now()
         fields = deduper.data_model.comparison_fields
         record_pair = deduper.uncertainPairs()[0]
         dedupers[deduper_id]['current_pair'] = record_pair
