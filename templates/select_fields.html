@@ -10,14 +10,13 @@
                     <div class="form-group">
                         <p class="help-block">Check the columns in your spreadsheet you want to use for comparing records. </p>
                         {% for field in fields %}
-                            <label>
+                            <label class="col-md-6">
                                 <input type="checkbox" name="{{field}}"> {{field}}
                             </label>
-                            <br />
                         {% endfor %}
                     </div>
 
-                    <hr />
+                    <div class='clearfix'></div>
                     <button type="submit" class="btn btn-primary" id="start-training">
                         Start training &raquo;
                     </button>
