@@ -11,11 +11,6 @@
                   a few minutes.</strong></p>
 
                 <p>When finished, your deduplicated data will be available to download below.</p>
-                {% if big_file %}
-                    <p>
-                        The file you uploaded has more than {{ line_count }} rows so if make take as much as 5 minutes to deduplicate.
-                    </p>
-                {% endif %}
             </div>
         </div>
 
@@ -40,7 +35,7 @@
         var template = "\
             <h4>Finished!</h4>\
             <p>\
-            Your spreadsheet has been de-duplicated. We used a recall weight of <strong>" + recall_weight + "</strong>.</p>\
+            Your spreadsheet has been de-duplicated. We found <strong>" + data.result.cluster_count + "</strong> unique rows out of your original " + data.result.line_count + " by using a recall weight of <strong>" + recall_weight + "</strong>.</p>\
             <p><i class='icon-download'></i> Download your spreadsheet with:</p>\
             <ul>\
                 <li>\

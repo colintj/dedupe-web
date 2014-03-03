@@ -47,7 +47,7 @@ def index():
             inp_file = f.read()
             row_count = inp_file.count('\n')
             if row_count > 10000:
-                error = 'Your file has %s rows and we can only currently handle 10,000.' % row_count
+                error = "Your spreadsheet must have less than 10,000 rows. Email info@datamade.us to dedupe larger files."
                 status_code = 500
             else:
                 dedupers[deduper_id] = {
