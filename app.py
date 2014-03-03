@@ -51,7 +51,7 @@ def index():
             }
             for key, deduper in dedupers.items():
                 last_interaction = deduper['last_interaction']
-                old = datetime.now() - timedelta(seconds=60 * 15)
+                old = datetime.now() - timedelta(seconds=60 * 30)
                 if last_interaction < old:
                     del dedupers[key]
             flask_session['session_id'] = deduper_id
