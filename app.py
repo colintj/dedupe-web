@@ -88,6 +88,7 @@ def select_fields():
         deduper_id = flask_session['session_id']
         inp = StringIO(dedupers[deduper_id]['csv'])
         filename = flask_session['filename']
+        dedupers[deduper_id]['last_interaction'] = datetime.now()
         reader = csv.reader(inp)
         fields = reader.next()
         inp = StringIO(dedupers[deduper_id]['csv'])
@@ -101,7 +102,6 @@ def select_fields():
                 data_d = readData(inp)
                 dedupers[deduper_id]['data_d'] = data_d
                 dedupers[deduper_id]['field_defs'] = copy.deepcopy(field_defs)
-                dedupers[deduper_id]['last_interaction'] = datetime.now()
                 deduper = dedupe.Dedupe(field_defs)
                 deduper.sample(data_d, 150000)
                 dedupers[deduper_id]['deduper'] = deduper
@@ -116,26 +116,8 @@ def training_run():
     if not flask_session.get('session_id'):
         return redirect(url_for('index'))
     else:
-        deduper_id = flask_session['session_id']
-        deduper = dedupers[deduper_id]['deduper']
         filename = flask_session['filename']
-        dedupers[deduper_id]['last_interaction'] = datetime.now()
-        fields = deduper.data_model.comparison_fields
-        record_pair = deduper.uncertainPairs()[0]
-        dedupers[deduper_id]['current_pair'] = record_pair
-        data = {
-            'fields': fields,
-            'left': {},
-            'right': {},
-        }
-        left, right = record_pair
-        for k,v in left.items():
-            if k in fields:
-                data['left'][k] = v
-        for k,v in right.items():
-            if k in fields:
-                data['right'][k] = v
-        return render_app_template('training_run.html', data=data, fields=fields, filename=filename)
+        return render_app_template('training_run.html', filename=filename)
 
 @app.route('/get-pair/')
 def get_pair():
@@ -145,6 +127,7 @@ def get_pair():
         deduper_id = flask_session['session_id']
         deduper = dedupers[deduper_id]['deduper']
         filename = flask_session['filename']
+        dedupers[deduper_id]['last_interaction'] = datetime.now()
         fields = deduper.data_model.comparison_fields
         record_pair = deduper.uncertainPairs()[0]
         dedupers[deduper_id]['current_pair'] = record_pair
@@ -169,6 +152,7 @@ def mark_pair():
         action = request.args['action']
         deduper_id = flask_session['session_id']
         current_pair = dedupers[deduper_id]['current_pair']
+        dedupers[deduper_id]['last_interaction'] = datetime.now()
         if dedupers[deduper_id].get('counter'):
             counter = dedupers[deduper_id]['counter']
         else:
@@ -229,6 +213,7 @@ def trained_dedupe():
     deduper_id = flask_session['session_id']
     inp = StringIO(dedupers[deduper_id]['csv'])
     filename = flask_session['filename']
+    dedupers[deduper_id]['last_interaction'] = datetime.now()
     field_defs = dedupers[deduper_id]['field_defs']
     training_data = request.files['training_data']
     dedupers[deduper_id]['training_data'] = json.load(training_data)
@@ -236,7 +221,6 @@ def trained_dedupe():
 
 @app.route('/adjust_threshold/')
 def adjust_threshold():
-    deduper_id = flask_session['session_id']
     filename = flask_session['filename']
     file_path = os.path.join(UPLOAD_FOLDER, filename)
     start = filename.split('_')[0]
