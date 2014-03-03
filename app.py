@@ -44,19 +44,26 @@ def index():
         f = request.files['input_file']
         if f and allowed_file(f.filename):
             deduper_id = str(uuid4())
-            dedupers[deduper_id] = {
-                'csv': f.read(),
-                'filename': secure_filename(str(time.time()) + "_" + f.filename),
-                'last_interaction': datetime.now()
-            }
-            for key, deduper in dedupers.items():
-                last_interaction = deduper['last_interaction']
-                old = datetime.now() - timedelta(seconds=60 * 30)
-                if last_interaction < old:
-                    del dedupers[key]
-            flask_session['session_id'] = deduper_id
-            flask_session['filename'] = secure_filename(str(time.time()) + "_" + f.filename)
-            return redirect(url_for('select_fields'))
+            inp_file = f.read()
+            row_count = inp_file.count('\n')
+            if row_count > 10000:
+                error = 'Your file has %s rows and we can only currently handle 10,000.' % row_count
+                status_code = 500
+            else:
+                dedupers[deduper_id] = {
+                    'csv': f.read(),
+                    'filename': secure_filename(str(time.time()) + "_" + f.filename),
+                    'last_interaction': datetime.now()
+                }
+                for key, deduper in dedupers.items():
+                    last_interaction = deduper['last_interaction']
+                    old = datetime.now() - timedelta(seconds=60 * 30)
+                    if last_interaction < old:
+                        del dedupers[key]
+                flask_session['session_id'] = deduper_id
+                flask_session['filename'] = secure_filename(str(time.time()) + "_" + f.filename)
+                flask_session['row_count'] = dedupers[deduper_id]['csv'].count('\n')
+                return redirect(url_for('select_fields'))
         else:
             error = 'Error uploading file. Did you forget to select one?'
             status_code = 500
@@ -206,7 +213,7 @@ def mark_pair():
 
 @app.route('/dedupe_finished/')
 def dedupe_finished():
-  return render_app_template("dedupe_finished.html")
+    return render_app_template("dedupe_finished.html")
 
 @app.route('/trained_dedupe/', methods=['POST'])
 def trained_dedupe():

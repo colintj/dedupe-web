@@ -6,9 +6,16 @@
     <div class="col-md-8">
         <div id='wait-info'>
             <div class='well'>
-                <p>We are taking what we've learned from your training and applying it to the rest of your dataset. <strong>This may take a few minutes.</strong></p>
+                <p>We are taking what we've learned from your training and
+                applying it to the rest of your dataset. <strong>This may take
+                  a few minutes.</strong></p>
 
                 <p>When finished, your deduplicated data will be available to download below.</p>
+                {% if big_file %}
+                    <p>
+                        The file you uploaded has more than {{ line_count }} rows so if make take as much as 5 minutes to deduplicate.
+                    </p>
+                {% endif %}
             </div>
         </div>
 

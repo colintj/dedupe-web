@@ -41,10 +41,12 @@ class WebDeduper(object):
         self.deduped_file_path = '%s-deduped.csv' % self.file_path
         self.deduped_unique_file_path = '%s-deduped_unique.csv' % self.file_path
         self.writeUniqueResults(clustered_dupes)
-        self.writeResults(clustered_dupes)
+        cluster_count, line_count = self.writeResults(clustered_dupes)
         files = {
             'deduped': os.path.relpath(self.deduped_file_path, __file__),
             'deduped_unique': os.path.relpath(self.deduped_unique_file_path, __file__),
+            'cluster_count': cluster_count, 
+            'line_count': line_count,
         }
         if self.training_data:
             files['training'] = os.path.relpath(self.training_data, __file__)
@@ -81,6 +83,7 @@ class WebDeduper(object):
             rows.append(row)
         rows = sorted(rows, key=itemgetter(0))
         writer.writerows(rows)
+        return unique_record_id, len(rows)
  
     def writeUniqueResults(self, clustered_dupes):
  
