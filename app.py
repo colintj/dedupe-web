@@ -11,7 +11,8 @@ import copy
 from dedupe import AsciiDammit
 from dedupe.serializer import _to_json, dedupe_decoder
 import dedupe
-from deduper import dedupeit, static_dedupeit
+from dedupe_utils import dedupeit, static_dedupeit, DedupeFileIO,\
+    DedupeFileError
 from cStringIO import StringIO
 import csv
 from queue import DelayedResult
@@ -22,7 +23,7 @@ from redis import Redis
 redis = Redis()
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'upload_data')
-ALLOWED_EXTENSIONS = set(['csv', 'json'])
+ALLOWED_EXTENSIONS = set(['csv', 'xls', 'xlsx'])
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -44,15 +45,11 @@ def index():
         f = request.files['input_file']
         if f and allowed_file(f.filename):
             deduper_id = str(uuid4())
-            inp_file = f.read()
-            row_count = inp_file.count('\n')
-            if row_count > 10000:
-                error = "Your spreadsheet must have less than 10,000 rows. Email info@datamade.us to dedupe larger files."
-                status_code = 500
-            else:
+            filename = secure_filename(str(time.time()) + "_" + f.filename)
+            try:
+                inp_file = DedupeFileIO(f, filename)
                 dedupers[deduper_id] = {
                     'csv': inp_file,
-                    'filename': secure_filename(str(time.time()) + "_" + f.filename),
                     'last_interaction': datetime.now()
                 }
                 for key, deduper in dedupers.items():
@@ -61,9 +58,12 @@ def index():
                     if last_interaction < old:
                         del dedupers[key]
                 flask_session['session_id'] = deduper_id
-                flask_session['filename'] = secure_filename(str(time.time()) + "_" + f.filename)
-                flask_session['row_count'] = dedupers[deduper_id]['csv'].count('\n')
+                flask_session['filename'] = filename
+                flask_session['row_count'] = inp_file.line_count
                 return redirect(url_for('select_fields'))
+            except DedupeFileError as e:
+                error = e.message
+                status_code = 500
         else:
             error = 'Error uploading file. Did you forget to select one?'
             status_code = 500
@@ -93,12 +93,12 @@ def select_fields():
         return redirect(url_for('index'))
     else:
         deduper_id = flask_session['session_id']
-        inp = StringIO(dedupers[deduper_id]['csv'])
+        inp = dedupers[deduper_id]['csv'].converted
         filename = flask_session['filename']
         dedupers[deduper_id]['last_interaction'] = datetime.now()
         reader = csv.reader(inp)
         fields = reader.next()
-        inp = StringIO(dedupers[deduper_id]['csv'])
+        inp.seek(0)
         if request.method == 'POST':
             field_list = [r for r in request.form]
             if field_list:
@@ -178,11 +178,8 @@ def mark_pair():
             counter['no'] += 1
             resp = {'counter': counter}
         elif action == 'finish':
-            filename = flask_session['filename']
-            file_path = os.path.join(UPLOAD_FOLDER, filename)
-            with open(file_path, 'wb') as f:
-                f.write(dedupers[deduper_id]['csv'])
-            training_file_path = os.path.join(UPLOAD_FOLDER, '%s-training.json' % filename)
+            file_io = dedupers[deduper_id]['csv']
+            training_file_path = os.path.join(UPLOAD_FOLDER, '%s-training.json' % file_io.file_path)
             training_data = dedupers[deduper_id]['training_data']
             with open(training_file_path, 'wb') as f:
                 f.write(json.dumps(training_data, default=_to_json))
@@ -191,7 +188,7 @@ def mark_pair():
             args = {
                 'field_defs': field_defs,
                 'training_data': training_file_path,
-                'file_path': file_path,
+                'file_io': file_io,
                 'data_sample': sample,
             }
             rv = dedupeit.delay(**args)
