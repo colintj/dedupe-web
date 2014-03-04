@@ -51,7 +51,7 @@ def index():
                 status_code = 500
             else:
                 dedupers[deduper_id] = {
-                    'csv': f.read(),
+                    'csv': inp_file,
                     'filename': secure_filename(str(time.time()) + "_" + f.filename),
                     'last_interaction': datetime.now()
                 }
