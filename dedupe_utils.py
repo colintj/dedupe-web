@@ -5,7 +5,7 @@ import json
 from dedupe import AsciiDammit
 import dedupe
 from cStringIO import StringIO
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 import logging
 from datetime import datetime
 from queue import queuefunc
@@ -33,15 +33,13 @@ class DedupeFileIO(object):
         self.file_type = convert.guess_format(raw.filename)
         if self.file_type not in ['xls', 'csv', 'xlsx']:
             raise DedupeFileError('%s is not a supported format' % self.file_type)
-        self.raw = raw
-        converted = convert.convert(self.raw, self.file_type)
-        self.line_count = converted.count('\n')
+        self.converted = convert.convert(raw, self.file_type)
+        self.line_count = self.converted.count('\n')
         if self.line_count > 10000:
             raise DedupeFileError('Your file has %s rows and we can only currently handle 10,000.' % self.line_count)
         self.file_path = os.path.abspath(os.path.join(UPLOAD_FOLDER, filename))
         with open(self.file_path, 'wb') as f:
-            f.write(converted)
-        self.converted = StringIO(converted)
+            f.write(self.converted)
 
     def prepare(self, clustered_dupes):
         self.clustered_dupes = clustered_dupes
@@ -54,13 +52,14 @@ class DedupeFileIO(object):
         duplicates clustered. 
         """
         cluster_membership = {}
-        for cluster_id, cluster in enumerate(clustered_dupes):
+        for cluster_id, cluster in enumerate(self.clustered_dupes):
             for record_id in cluster:
                 cluster_membership[record_id] = cluster_id
 
         unique_record_id = cluster_id + 1
- 
-        reader = csv.reader(self.converted)
+        
+        f = open(self.file_path, 'rU')
+        reader = csv.reader(f)
  
         heading_row = reader.next()
         heading_row.insert(0, 'Group ID')
@@ -79,23 +78,24 @@ class DedupeFileIO(object):
         rows.insert(0, heading_row)
         self.clustered_rows = []
         for row in rows:
-            d = {}
+            d = OrderedDict()
             for k,v in zip(heading_row, row):
                 d[k] = v
             self.clustered_rows.append(d)
+        f.close()
         return unique_record_id
  
     def _prepareUniqueResults(self):
         """ """
         cluster_membership = {}
-        for (cluster_id, cluster) in enumerate(clustered_dupes):
+        for (cluster_id, cluster) in enumerate(self.clustered_dupes):
             for record_id in cluster:
                 cluster_membership[record_id] = cluster_id
  
-        reader = csv.reader(self.converted)
+        f = open(self.file_path, 'rU')
+        reader = csv.reader(f)
  
         rows = [reader.next()]
-
         seen_clusters = set()
         for row_id, row in enumerate(reader):
             if row_id in cluster_membership: 
@@ -107,10 +107,11 @@ class DedupeFileIO(object):
                 rows.append(row)
         self.unique_rows = []
         for row in rows:
-            d = {}
-            for k,v in zip(heading_row, row):
+            d = OrderedDict()
+            for k,v in zip(rows[0], row):
                 d[k] = v
             self.unique_rows.append(d)
+        f.close()
         return self.unique_rows
     
     def writeCSV(self):
@@ -131,37 +132,35 @@ class DedupeFileIO(object):
     def _iterXLS(self, outp_type):
         rows = getattr(self,outp_type)
         header = rows[0].keys()
-        for i, row in enumerate(rows):
-            for j, key in enumerate(header):
-                try:
-                    value = row[key]
-                except KeyError:
-                    value = ''
-                yield i,j,value
+        for r, row in enumerate(rows):
+            for c, key in enumerate(header):
+                value = row[key]
+                yield r,c,value
 
     def writeXLS(self):
         u_path = '%s-deduped_unique.xls' % self.file_path
         d_path = '%s-deduped.xls' % self.file_path
-        clustered_book = xlwt.Workbook()
-        clustered_header = self.clustered_rows[0].keys()
+        clustered_book = xlwt.Workbook(encoding='utf-8')
+        #clustered_header = self.clustered_rows[0].keys()
         clustered_sheet = clustered_book.add_sheet('Clustered Results')
-        for i, col_name in enumerate(clustered_header):
-            clustered_sheet.write(0, i, col_name)
+        #for i, col_name in enumerate(clustered_header):
+        #    clustered_sheet.write(0, i, col_name)
         for i,j,value in self._iterXLS('clustered_rows'):
-            sheet.write(i,j,value)
-        d_file = open(d_path, 'wb')
-        clustered_book.save(d_file)
-        d_file.close()
-        unique_book = xlwt.Workbook()
-        unique_header = self.unique_rows[0].keys()
+            clustered_sheet.write(i,j,label=value)
+        try:
+            clustered_book.save(d_path)
+        except Exception, e:
+            logger.info(e)
+        logger.info('### Finished saving')
+        unique_book = xlwt.Workbook(encoding='utf-8')
+        #unique_header = self.unique_rows[0].keys()
         unique_sheet = unique_book.add_sheet('Unique Results')
-        for i, col_name in enumerate(unique_header):
-            unique_sheet.write(0, i, col_name)
+        #for i, col_name in enumerate(unique_header):
+        #    unique_sheet.write(0, i, col_name)
         for i,j,value in self._iterXLS('unique_rows'):
-            sheet.write(i,j,value)
-        u_file = open(d_path, 'wb')
-        unique_book.save(d_file)
-        u_file.close()
+            unique_sheet.write(i,j,label=value)
+        unique_book.save(u_path)
+        logger.info('### Finished writing')
         return d_path, u_path, self.cluster_count, self.line_count
     
     def writeXLSX(self):
@@ -188,6 +187,7 @@ class WebDeduper(object):
     def dedupe(self):
         threshold = self.deduper.threshold(self.data_d, recall_weight=self.recall_weight)
         clustered_dupes = self.deduper.match(self.data_d, threshold)
+        self.file_io.prepare(clustered_dupes)
         if self.file_io.file_type == 'csv':
             deduped, deduped_unique, cluster_count, line_count = self.file_io.writeCSV()
         if self.file_io.file_type == 'xls':
@@ -215,7 +215,7 @@ class WebDeduper(object):
  
     def readData(self):
         data = {}
-        f = open(self.file_path, 'rU')
+        f = open(self.file_io.file_path, 'rU')
         reader = csv.DictReader(f)
         for i, row in enumerate(reader):
             clean_row = [(k, self.preProcess(v)) for (k,v) in row.items()]

@@ -37,9 +37,7 @@ def queue_daemon(app, rv_ttl=500):
         try:
             rv = func(*args, **kwargs)
         except Exception, e:
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            rv = 'Exc: %s, file: %s, line:%s' % (exc_type, fname, exc_tb.tb_lineno)
+            rv = 'Exc: %s' % (e.message)
         if rv is not None:
             redis.set(key, dumps(rv))
             redis.expire(key, rv_ttl)

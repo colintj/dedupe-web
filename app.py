@@ -76,9 +76,9 @@ def preProcess(column):
     column = column.strip().strip('"').strip("'").lower().strip()
     return column
 
-def readData(f):
+def readData(inp):
     data = {}
-    reader = csv.DictReader(f)
+    reader = csv.DictReader(StringIO(inp))
     for i, row in enumerate(reader):
         clean_row = [(k, preProcess(v)) for (k,v) in row.items()]
         row_id = i
@@ -96,9 +96,9 @@ def select_fields():
         inp = dedupers[deduper_id]['csv'].converted
         filename = flask_session['filename']
         dedupers[deduper_id]['last_interaction'] = datetime.now()
-        reader = csv.reader(inp)
+        reader = csv.reader(StringIO(inp))
         fields = reader.next()
-        inp.seek(0)
+        del reader
         if request.method == 'POST':
             field_list = [r for r in request.form]
             if field_list:
