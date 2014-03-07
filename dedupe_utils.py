@@ -13,6 +13,8 @@ import pdb
 from operator import itemgetter
 from csvkit import convert
 import xlwt
+from openpyxl import Workbook
+from openpyxl.cell import get_column_letter
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -129,7 +131,7 @@ class DedupeFileIO(object):
         clusters.close()
         return d_path, u_path, self.cluster_count, self.line_count
 
-    def _iterXLS(self, outp_type):
+    def _iterExcel(self, outp_type):
         rows = getattr(self,outp_type)
         header = rows[0].keys()
         for r, row in enumerate(rows):
@@ -141,30 +143,35 @@ class DedupeFileIO(object):
         u_path = '%s-deduped_unique.xls' % self.file_path
         d_path = '%s-deduped.xls' % self.file_path
         clustered_book = xlwt.Workbook(encoding='utf-8')
-        #clustered_header = self.clustered_rows[0].keys()
         clustered_sheet = clustered_book.add_sheet('Clustered Results')
-        #for i, col_name in enumerate(clustered_header):
-        #    clustered_sheet.write(0, i, col_name)
-        for i,j,value in self._iterXLS('clustered_rows'):
-            clustered_sheet.write(i,j,label=value)
-        try:
-            clustered_book.save(d_path)
-        except Exception, e:
-            logger.info(e)
-        logger.info('### Finished saving')
+        for r,c,value in self._iterExcel('clustered_rows'):
+            clustered_sheet.write(r,c,label=value)
+        clustered_book.save(d_path)
         unique_book = xlwt.Workbook(encoding='utf-8')
-        #unique_header = self.unique_rows[0].keys()
         unique_sheet = unique_book.add_sheet('Unique Results')
-        #for i, col_name in enumerate(unique_header):
-        #    unique_sheet.write(0, i, col_name)
-        for i,j,value in self._iterXLS('unique_rows'):
-            unique_sheet.write(i,j,label=value)
+        for r,c,value in self._iterExcel('unique_rows'):
+            unique_sheet.write(r,c,label=value)
         unique_book.save(u_path)
-        logger.info('### Finished writing')
         return d_path, u_path, self.cluster_count, self.line_count
     
     def writeXLSX(self):
-        return 'deduped_path', 'deduped_unique_path', self.cluster_count, self.line_count
+        u_path = '%s-deduped_unique.xlsx' % self.file_path
+        d_path = '%s-deduped.xlsx' % self.file_path
+        d_book = Workbook()
+        d_ws = d_book.active
+        d_ws.title = 'Clustered Results'
+        for r,c,value in self._iterExcel('clustered_rows'):
+            col = get_column_letter(c + 1)
+            d_ws.cell('%s%s' % (col, r + 1)).value = value
+        d_book.save(filename=d_path)
+        u_book = Workbook()
+        u_ws = u_book.active
+        u_ws.title = 'Unique Results'
+        for r,c,value in self._iterExcel('unique_rows'):
+            col = get_column_letter(c + 1)
+            u_ws.cell('%s%s' % (col, r + 1)).value = value
+        u_book.save(filename=u_path)
+        return d_path, u_path, self.cluster_count, self.line_count
 
 class WebDeduper(object):
     
