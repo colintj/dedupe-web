@@ -45,12 +45,14 @@ def index():
         f = request.files['input_file']
         if f and allowed_file(f.filename):
             deduper_id = str(uuid4())
-            filename = secure_filename(str(time.time()) + "_" + f.filename)
+            fname = secure_filename(str(time.time()) + "_" + f.filename)
+            file_path = os.path.abspath(os.path.join(UPLOAD_FOLDER, fname))
+            f.save(file_path)
             try:
-                inp_file = DedupeFileIO(f, filename)
+                inp_file = DedupeFileIO(file_path, fname)
                 dedupers[deduper_id] = {
+                    'last_interaction': datetime.now(),
                     'csv': inp_file,
-                    'last_interaction': datetime.now()
                 }
                 for key, deduper in dedupers.items():
                     last_interaction = deduper['last_interaction']
@@ -58,7 +60,8 @@ def index():
                     if last_interaction < old:
                         del dedupers[key]
                 flask_session['session_id'] = deduper_id
-                flask_session['filename'] = filename
+                flask_session['filename'] = inp_file.filename
+                flask_session['file_path'] = inp_file.file_path
                 flask_session['row_count'] = inp_file.line_count
                 return redirect(url_for('select_fields'))
             except DedupeFileError as e:
@@ -158,7 +161,6 @@ def mark_pair():
     else:
         action = request.args['action']
         deduper_id = flask_session['session_id']
-        current_pair = dedupers[deduper_id]['current_pair']
         dedupers[deduper_id]['last_interaction'] = datetime.now()
         if dedupers[deduper_id].get('counter'):
             counter = dedupers[deduper_id]['counter']
@@ -170,10 +172,12 @@ def mark_pair():
             labels = {'distinct' : [], 'match' : []}
         deduper = dedupers[deduper_id]['deduper']
         if action == 'yes':
+            current_pair = dedupers[deduper_id]['current_pair']
             labels['match'].append(current_pair)
             counter['yes'] += 1
             resp = {'counter': counter}
         elif action == 'no':
+            current_pair = dedupers[deduper_id]['current_pair']
             labels['distinct'].append(current_pair)
             counter['no'] += 1
             resp = {'counter': counter}
@@ -212,21 +216,10 @@ def mark_pair():
 def dedupe_finished():
     return render_app_template("dedupe_finished.html")
 
-@app.route('/trained_dedupe/', methods=['POST'])
-def trained_dedupe():
-    deduper_id = flask_session['session_id']
-    inp = StringIO(dedupers[deduper_id]['csv'])
-    filename = flask_session['filename']
-    dedupers[deduper_id]['last_interaction'] = datetime.now()
-    field_defs = dedupers[deduper_id]['field_defs']
-    training_data = request.files['training_data']
-    dedupers[deduper_id]['training_data'] = json.load(training_data)
-    return redirect(url_for('dedupe_finished'))
-
 @app.route('/adjust_threshold/')
 def adjust_threshold():
     filename = flask_session['filename']
-    file_path = os.path.join(UPLOAD_FOLDER, filename)
+    file_path = flask_session['file_path']
     start = filename.split('_')[0]
     settings_path = None
     for f in os.listdir(UPLOAD_FOLDER):
@@ -236,6 +229,7 @@ def adjust_threshold():
     args = {
         'settings_path': settings_path,
         'file_path': file_path,
+        'filename': filename,
         'recall_weight': recall_weight,
     }
     rv = static_dedupeit.delay(**args)

@@ -2,7 +2,10 @@ import csv
 import re
 import os
 import json
+import time
 from dedupe import AsciiDammit
+from werkzeug import secure_filename
+from werkzeug.datastructures import FileStorage
 import dedupe
 from cStringIO import StringIO
 from collections import defaultdict, OrderedDict
@@ -31,17 +34,16 @@ class DedupeFileIO(object):
     Take an uploaded file, figure out what type it is, convert it to csv
     then save it back as the same format.
     """
-    def __init__(self, raw, filename):
-        self.file_type = convert.guess_format(raw.filename)
+    def __init__(self, file_path, filename):
+        self.file_path = file_path
+        self.filename = filename
+        self.file_type = convert.guess_format(self.filename)
         if self.file_type not in ['xls', 'csv', 'xlsx']:
             raise DedupeFileError('%s is not a supported format' % self.file_type)
-        self.converted = convert.convert(raw, self.file_type)
+        self.converted = convert.convert(open(self.file_path, 'rb'), self.file_type)
         self.line_count = self.converted.count('\n')
         if self.line_count > 10000:
             raise DedupeFileError('Your file has %s rows and we can only currently handle 10,000.' % self.line_count)
-        self.file_path = os.path.abspath(os.path.join(UPLOAD_FOLDER, filename))
-        with open(self.file_path, 'wb') as f:
-            f.write(self.converted)
 
     def prepare(self, clustered_dupes):
         self.clustered_dupes = clustered_dupes
@@ -60,7 +62,7 @@ class DedupeFileIO(object):
 
         unique_record_id = cluster_id + 1
         
-        f = open(self.file_path, 'rU')
+        f = StringIO(self.converted)
         reader = csv.reader(f)
  
         heading_row = reader.next()
@@ -94,7 +96,7 @@ class DedupeFileIO(object):
             for record_id in cluster:
                 cluster_membership[record_id] = cluster_id
  
-        f = open(self.file_path, 'rU')
+        f = StringIO(self.converted)
         reader = csv.reader(f)
  
         rows = [reader.next()]
@@ -202,8 +204,8 @@ class WebDeduper(object):
         if self.file_io.file_type == 'xlsx':
             deduped, deduped_unique, cluster_count, line_count = self.file_io.writeXLSX()
         files = {
-            'deduped': deduped,
-            'deduped_unique': deduped_unique,
+            'deduped': os.path.relpath(deduped, __file__),
+            'deduped_unique': os.path.relpath(deduped_unique, __file__),
             'cluster_count': cluster_count, 
             'line_count': line_count,
         }
@@ -222,7 +224,7 @@ class WebDeduper(object):
  
     def readData(self):
         data = {}
-        f = open(self.file_io.file_path, 'rU')
+        f = StringIO(self.file_io.converted)
         reader = csv.DictReader(f)
         for i, row in enumerate(reader):
             clean_row = [(k, self.preProcess(v)) for (k,v) in row.items()]
@@ -244,8 +246,9 @@ def dedupeit(**kwargs):
 @queuefunc
 def static_dedupeit(**kwargs):
     d = dedupe.StaticDedupe(kwargs['settings_path'])
+    file_io = DedupeFileIO(kwargs['file_path'], kwargs['filename'])
     deduper = WebDeduper(d, 
-        file_io=kwargs['file_io'],
+        file_io=file_io,
         recall_weight=kwargs['recall_weight'])
     files = deduper.dedupe()
     d.pool.terminate()
