@@ -1,18 +1,58 @@
 {% extends 'base.html' %}
 {% block content %}
 
+<div class="panel-group" id="accordion">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h4 class="panel-title">
+        <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
+          <i class='icon-info-sign'></i> What is Spreadsheet Deduper?
+        </a>
+      </h4>
+    </div>
+    <div id="collapseOne" class="panel-collapse collapse in">
+      <div class="panel-body">
+        <div class="col-md-8">
+            <p>Do you have a spreadsheet with duplicate entries?</p>
+
+            <p><strong>This tool can identify or remove them.</strong></p>
+
+            <ol>
+                <li>Upload a spreadsheet with up to 10,000 rows</li>
+                <li>Choose which columns you want to compare</li>
+                <li>Train the system by marking 20 or more positive or negative matches</li>
+                <li>Download your original data with the <strong>duplicates identified</strong> or <strong>removed</strong></li>
+            </ol>
+
+            <p>We use the <a href='https://github.com/datamade/dedupe'>dedupe library</a> to identify duplicates in any spreadsheet in <strong>less than 5 minutes</strong>.</p>
+
+            <p><a class='btn btn-primary' href='#' id='get-started'>Let's get started!</a></p>
+        </div>
+        <div class="col-md-4">
+            <div class='alert alert-success'>
+                <h4>
+                    <i class='icon-wrench'></i>
+                    Custom implementations
+                </h4>
+                <p>Want to de-dupelicate data that is:</p> 
+                <ul>
+                    <li>bigger?</li>
+                    <li>more complicated?</li>
+                    <li>sensitive?</li>
+                </ul>
+
+                <p><br /><a href='http://datamade.us'>DataMade</a> can set up a custom implementation. <a href='mailto:info@datamade.us'>Contact us</a> to get started.</p>
+            </div>
+        </div>
+    </div>
+  </div>
+</div>
+<br />
+
 {% include "dedupe_steps.html" %}
 <h3>1. Upload a spreadsheet</h3>
 {% include "error.html" %}
 <div class="col-md-8">
-
-    <div class='alert alert-info'>
-        <p>Do you have a spreadsheet with duplicate entries?</p>
-
-        <p><strong>We can identify and remove them.</strong></p>
-
-        <p>This website, built and maintained by <a href='http://datamade.us'>DataMade</a>, uses the <a href='https://github.com/datamade/dedupe'>dedupe library</a> and your input to de-duplicate any spreadsheet in <strong>less than 5 minutes</strong>. <a href='/about/'>Read more &raquo;</a></p>
-    </div>
 
   <div class='well'>
 
@@ -20,7 +60,7 @@
         <div class="form-group">
             <label for="input_file">Upload a spreadsheet to get started ...</label>
             <input type="file" id="input_file" name="input_file">
-            <p class="help-block">Only <strong>.csv, .xls or .xlsx</strong> files that are <strong>less than 10,000 rows</strong>, please. <br />(<a href='/about/#data-policy'>We won't keep your data</a>)</p>
+            <p class="help-block">Only <strong>.csv, .xls or .xlsx</strong> files that have <strong>less than 10,000 rows</strong>.</p>
         </div>
         <hr />
         <button type="submit" id="submit-upload" class="btn btn-primary">Next &raquo;</button>
@@ -28,15 +68,16 @@
   </div>
 </div>
 <div class="col-md-4">
-    <div class='alert alert-success'>
-        <p><i class='icon-circle-arrow-up'></i> Want to dedupe some data that is:</p> 
-        <ul>
-            <li>bigger?</li>
-            <li>more complicated?</li>
-            <li>sensitive?</li>
-        </ul>
-
-        <p><br />We can help! <a href='mailto:info@datamade.us'>Contact DataMade</a>.</p>
+    <div class='alert alert-info'>
+        <i class='icon-info-sign'></i> <a href='/about/#data-policy'>We don't keep your data</a>, but please don't upload any sensitive information.
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script type="text/javascript">
+    $('#get-started').click( function(){
+      $('#collapseOne').collapse('hide');
+    });
+</script>
 {% endblock %}

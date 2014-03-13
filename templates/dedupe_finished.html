@@ -34,10 +34,12 @@
 
         // original, training, settings, deduped
         var template = "\
-            <h4><i class='icon-thumbs-up-alt'></i> Your spreadsheet has been de-duplicated!</h4>\
-            <p>\
-                Out of " + data.result.line_count + " rows, we found <strong>" + data.result.cluster_count + "</strong> unique entries by using a recall weight of <strong>" + recall_weight + "</strong>.</p>\
-            <hr />\
+            <div class='alert alert-info'>\
+                <h4><i class='icon-thumbs-up-alt'></i> Your spreadsheet has been de-duplicated!</h4>\
+                <p>\
+                    Out of " + data.result.line_count + " rows, we found <strong>" + data.result.cluster_count + "</strong> unique entries by using a recall weight of <strong>" + recall_weight + "</strong>.\
+                </p>\
+            </div>\
             <h4><i class='icon-download'></i> Download your spreadsheet with:</h4>\
             <ul class='list-unstyled'>\
                 <li>\
