@@ -4,22 +4,19 @@ import os
 import json
 import time
 from dedupe import AsciiDammit
-from werkzeug import secure_filename
-from werkzeug.datastructures import FileStorage
 import dedupe
 from cStringIO import StringIO
 from collections import defaultdict, OrderedDict
 import logging
 from datetime import datetime
 from queue import queuefunc
-import pdb
 from operator import itemgetter
 from csvkit import convert
 import xlwt
 from openpyxl import Workbook
 from openpyxl.cell import get_column_letter
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'upload_data')
@@ -35,15 +32,19 @@ class DedupeFileIO(object):
     then save it back as the same format.
     """
     def __init__(self, file_path, filename):
+        now = datetime.now().isoformat()
         self.file_path = file_path
         self.filename = filename
         self.file_type = convert.guess_format(self.filename)
         if self.file_type not in ['xls', 'csv', 'xlsx']:
+            logger.warning(' %s Unsupported Format: %s, (%s)' % (now, self.file_type, self.filename))
             raise DedupeFileError('%s is not a supported format' % self.file_type)
         self.converted = convert.convert(open(self.file_path, 'rb'), self.file_type)
         self.line_count = self.converted.count('\n')
         if self.line_count > 10000:
+            logger.warning(' %s File too big: %s, (%s)' % (now, self.line_count, self.filename))
             raise DedupeFileError('Your file has %s rows and we can only currently handle 10,000.' % self.line_count)
+        logger.warning(' %s Format: %s, Line Count: %s' % (now, self.file_type, self.line_count))
 
     def prepare(self, clustered_dupes):
         self.clustered_dupes = clustered_dupes

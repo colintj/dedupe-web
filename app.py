@@ -5,9 +5,11 @@ import time
 from datetime import datetime, timedelta
 import json
 import requests
+import logging
 import re
 import os
 import copy
+import time
 from dedupe import AsciiDammit
 from dedupe.serializer import _to_json, dedupe_decoder
 import dedupe
@@ -33,14 +35,38 @@ app.secret_key = os.environ['FLASK_KEY']
 
 dedupers = {}
 
+loggers = [app.logger, logging.getLogger('dedupe'),
+          logging.getLogger('dedupe_utils')]
+
+for logger in loggers:
+    logger.setLevel(logging.WARNING)
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def send_ga_log(action, cid, label=None, value=None):
+    data = {
+        'v': 1,
+        'tid': 'UA-47418030-1',
+        'cid': cid,
+        't': 'event',
+        'ec': 'Dedupe Session',
+        'ea': action,
+        'el': label,
+        'ev': value,
+    }
+    r = requests.post('http://www.google-analytics.com/collect', data=data)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     status_code = 200
     error = None
+    if flask_session.get('ga_cid') is None:
+        try:
+            flask_session['ga_cid'] = request.cookies['_ga']
+        except KeyError:
+            flask_session['ga_cid'] = str(uuid4())
     if request.method == 'POST':
         f = request.files['input_file']
         if f and allowed_file(f.filename):
@@ -63,12 +89,24 @@ def index():
                 flask_session['filename'] = inp_file.filename
                 flask_session['file_path'] = inp_file.file_path
                 flask_session['row_count'] = inp_file.line_count
+                send_ga_log(
+                    'Row Count', 
+                    flask_session['ga_cid'], 
+                    value=inp_file.line_count
+                )
+                send_ga_log(
+                    'File Type', 
+                    flask_session['ga_cid'], 
+                    label=inp_file.file_type, 
+                )
                 return redirect(url_for('select_fields'))
             except DedupeFileError as e:
+                send_ga_log('Upload Error', flask_session['ga_cid'], label=e.message)
                 error = e.message
                 status_code = 500
         else:
             error = 'Error uploading file. Did you forget to select one?'
+            send_ga_log('Upload Error', flask_session['ga_cid'], label=error)
             status_code = 500
     return make_response(render_app_template('index.html', error=error), status_code)
 
@@ -112,12 +150,21 @@ def select_fields():
                 data_d = readData(inp)
                 dedupers[deduper_id]['data_d'] = data_d
                 dedupers[deduper_id]['field_defs'] = copy.deepcopy(field_defs)
+                start = time.time()
                 deduper = dedupe.Dedupe(field_defs)
                 deduper.sample(data_d, 150000)
                 dedupers[deduper_id]['deduper'] = deduper
+                end = time.time()
+                send_ga_log(
+                    'Dedupe initialization', 
+                    flask_session['ga_cid'], 
+                    label='Timing in seconds',
+                    value=int(end-start)
+                )
                 return redirect(url_for('training_run'))
             else:
                 error = 'You must select at least one field to compare on.'
+                send_ga_log('Select Fields Error', flask_session['ga_cid'], label=error)
                 status_code = 500
         return render_app_template('select_fields.html', error=error, fields=fields, filename=filename)
 
@@ -198,6 +245,7 @@ def mark_pair():
             rv = dedupeit.delay(**args)
             flask_session['deduper_key'] = rv.key
             resp = {'finished': True}
+            flask_session['dedupe_start'] = time.time()
         else:
             counter['unsure'] += 1
             dedupers[deduper_id]['counter'] = counter
@@ -234,6 +282,7 @@ def adjust_threshold():
     }
     rv = static_dedupeit.delay(**args)
     flask_session['deduper_key'] = rv.key
+    flask_session['adjust_start'] = time.time()
     resp = make_response(json.dumps({'adjusted': True}))
     resp.headers['Content-Type'] = 'application/json'
     return resp
@@ -252,6 +301,24 @@ def working():
         return jsonify(ready=False)
     redis.delete(key)
     del flask_session['deduper_key']
+    if flask_session.get('dedupe_start'):
+        start = flask_session['dedupe_start']
+        end = time.time()
+        send_ga_log(
+            'Dedupe matching', 
+            flask_session['ga_cid'], 
+            label='Timing in seconds',
+            value=int(end-start)
+        )
+    if flask_session.get('adjust_start'):
+        start = flask_session['adjust_start']
+        end = time.time()
+        send_ga_log(
+            'Dedupe Adjust', 
+            flask_session['ga_cid'], 
+            label='Timing in seconds',
+            value=int(end-start)
+        )
     return jsonify(ready=True, result=rv.return_value)
 
 @app.route('/upload_data/<path:filename>/')
