@@ -3,6 +3,7 @@ gunicorn
 requests
 redis
 csvkit
+xlwt
 
 # ====================
 # Dedupe
