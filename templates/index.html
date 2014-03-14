@@ -5,12 +5,12 @@
   <div class="panel panel-default">
     <div class="panel-heading">
       <h4 class="panel-title">
-        <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
+        <a data-toggle="collapse" data-parent="#accordion" href="#accordionAbout">
           <i class='icon-info-sign'></i> What is Spreadsheet Deduper?
         </a>
       </h4>
     </div>
-    <div id="collapseOne" class="panel-collapse collapse in">
+    <div id="accordionAbout" class="panel-collapse collapse in">
       <div class="panel-body">
         <div class="col-md-8">
             <p>Do you have a spreadsheet with duplicate entries?</p>
@@ -26,23 +26,7 @@
 
             <p>We use the <a href='https://github.com/datamade/dedupe'>dedupe library</a> to identify duplicates in any spreadsheet in <strong>less than 5 minutes</strong>.</p>
 
-            <p><a class='btn btn-primary' href='#' id='get-started'>Let's get started!</a></p>
-        </div>
-        <div class="col-md-4">
-            <div class='alert alert-success'>
-                <h4>
-                    <i class='icon-wrench'></i>
-                    Custom implementations
-                </h4>
-                <p>Want to de-dupelicate data that is:</p> 
-                <ul>
-                    <li>bigger?</li>
-                    <li>more complicated?</li>
-                    <li>sensitive?</li>
-                </ul>
-
-                <p><br /><a href='http://datamade.us'>DataMade</a> can set up a custom implementation. <a href='mailto:info@datamade.us'>Contact us</a> to get started.</p>
-            </div>
+            <p><a class='btn btn-primary' href='#' id='closeAbout'>Ok, thanks!</a></p>
         </div>
     </div>
   </div>
@@ -60,7 +44,11 @@
         <div class="form-group">
             <label for="input_file">Upload a spreadsheet to get started ...</label>
             <input type="file" id="input_file" name="input_file">
-            <p class="help-block">Only <strong>.csv, .xls or .xlsx</strong> files that have <strong>less than 10,000 rows</strong>.</p>
+            <p class="help-block">
+                Only <strong>.csv, .xls or .xlsx</strong> files that have <strong>less than 10,000 rows</strong>.
+                <br />
+                <a href='/about/#data-policy'>We don't keep your data</a>, but please don't upload any sensitive information.
+            </p>
         </div>
         <hr />
         <button type="submit" id="submit-upload" class="btn btn-primary">Next &raquo;</button>
@@ -68,16 +56,35 @@
   </div>
 </div>
 <div class="col-md-4">
-    <div class='alert alert-info'>
-        <i class='icon-info-sign'></i> <a href='/about/#data-policy'>We don't keep your data</a>, but please don't upload any sensitive information.
+    <div class='alert alert-success'>
+        <h4>
+            <i class='icon-wrench'></i>
+            Custom implementations
+        </h4>
+        <p>Want to de-duplicate data that is:</p> 
+        <ul>
+            <li>bigger?</li>
+            <li>more complicated?</li>
+            <li>sensitive?</li>
+        </ul>
+
+        <p><br /><a href='http://datamade.us'>DataMade</a> can set up a custom implementation. <a href='mailto:info@datamade.us'>Contact us</a> to get started.</p>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
+<script type="text/javascript" src="/static/js/jquery.cookie.js"></script>
 <script type="text/javascript">
-    $('#get-started').click( function(){
-      $('#collapseOne').collapse('hide');
-    });
+
+  if ($.cookie("show-welcome") != "read") {
+    $('#accordionAbout').collapse('hide');
+    $.cookie("show-welcome", "read", { expires: 7 });
+  }
+
+  $('#closeAbout').click(function(){
+    $('#accordionAbout').collapse('hide');
+  });
+
 </script>
 {% endblock %}
