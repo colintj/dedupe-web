@@ -26,3 +26,7 @@ Javascript
 
 * [Bootstrap 3](http://getbootstrap.com) - HTML and CSS layouts
 * [Moment js](http://momentjs.com/) - date formatting library
+
+## Community
+* [Dedupe Google group](https://groups.google.com/forum/?fromgroups=#!forum/open-source-deduplication)
+* IRC channel, #dedupe on irc.freenode.net
