@@ -4,12 +4,12 @@ Dedupe files via a web interface
 
 ### Setup
 
-*Install OS level dependencies:* 
+**Install OS level dependencies:** 
 
 * Python 2.7
 * Redis
 
-*``pip install`` app requirements*
+**Install app requirements**
 
 ```bash
 $ pip install "numpy>=1.6"
@@ -18,9 +18,18 @@ $ pip install -r requirements.txt
 
 ### Running the app
 
-To run this app locally, make sure you have your Redis Server running on the
-default port (6379). You’ll then need to have ``app.py`` and ``run_queue.py``
-running at the same time.
+There are three components that should be running simultaneously for the app to
+work: Redis, the Flask app, and the worker process that actually does the final
+deduplication:
+
+``` bash 
+$ redis-server # This command may differ depending on your OS
+$ nohup python run_queue.py &
+$ python app.py
+```
+
+For debugging purposes, it is useful to run these three processes in separate
+terminal sessions. 
 
 ## Community
 * [Dedupe Google group](https://groups.google.com/forum/?fromgroups=#!forum/open-source-deduplication)
