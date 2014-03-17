@@ -10,7 +10,7 @@
         </a>
       </h4>
     </div>
-    <div id="accordionAbout" class="panel-collapse collapse in">
+    <div id="accordionAbout" class="panel-collapse collapse">
       <div class="panel-body">
         <div class="col-md-8">
             <p>Do you have a spreadsheet with duplicate entries?</p>
@@ -78,7 +78,7 @@
 <script type="text/javascript">
 
   if ($.cookie("show-welcome") != "read") {
-    $('#accordionAbout').collapse('hide');
+    $('#accordionAbout').collapse('show');
     $.cookie("show-welcome", "read", { expires: 7 });
   }
 
