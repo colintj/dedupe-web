@@ -1,31 +1,35 @@
-# Deduper on the web
+# Spreadsheet Deduper
 
 Dedupe files via a web interface
 
-Built with Flask, Dedupe and Python
+### Setup
+
+**Install OS level dependencies:** 
+
+* Python 2.7
+* Redis
+
+**Install app requirements**
 
 ```bash
-pip install "numpy>=1.6"
-pip install -r requirements.txt
-python app.py
+$ pip install "numpy>=1.6"
+$ pip install -r requirements.txt
 ```
 
-## Dependencies
+### Running the app
 
-Server
+There are three components that should be running simultaneously for the app to
+work: Redis, the Flask app, and the worker process that actually does the final
+deduplication:
 
-* Python
-* [fastcluster](http://math.stanford.edu/~muellner/fastcluster.html)
-* [hcluster](http://code.google.com/p/scipy-cluster/)
-* [networkx](http://networkx.github.com/)
-* [numpy](http://numpy.scipy.org/)
-* [dedupe](http://github.com/open-city/dedupe)
-* [flask](http://flask.pocoo.org/)
+``` bash 
+$ redis-server # This command may differ depending on your OS
+$ nohup python run_queue.py &
+$ python app.py
+```
 
-Javascript
-
-* [Bootstrap 3](http://getbootstrap.com) - HTML and CSS layouts
-* [Moment js](http://momentjs.com/) - date formatting library
+For debugging purposes, it is useful to run these three processes in separate
+terminal sessions. 
 
 ## Community
 * [Dedupe Google group](https://groups.google.com/forum/?fromgroups=#!forum/open-source-deduplication)
