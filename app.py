@@ -185,7 +185,7 @@ def get_pair():
         deduper = dedupers[deduper_id]['deduper']
         filename = flask_session['filename']
         dedupers[deduper_id]['last_interaction'] = datetime.now()
-        fields = deduper.data_model.comparison_fields
+        fields = deduper.data_model.field_comparators
         record_pair = deduper.uncertainPairs()[0]
         dedupers[deduper_id]['current_pair'] = record_pair
         data = []
@@ -254,7 +254,6 @@ def mark_pair():
         dedupers[deduper_id]['training_data'] = labels
         dedupers[deduper_id]['counter'] = counter
         if resp.get('finished'):
-            deduper.pool.terminate()
             del dedupers[deduper_id]
     resp = make_response(json.dumps(resp))
     resp.headers['Content-Type'] = 'application/json'

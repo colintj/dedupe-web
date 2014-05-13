@@ -240,7 +240,6 @@ def dedupeit(**kwargs):
         file_io=kwargs['file_io'],
         training_data=kwargs['training_data'])
     files = deduper.dedupe()
-    d.pool.terminate()
     del d
     return files
 
@@ -252,6 +251,5 @@ def static_dedupeit(**kwargs):
         file_io=file_io,
         recall_weight=kwargs['recall_weight'])
     files = deduper.dedupe()
-    d.pool.terminate()
     del d
     return files
